@@ -72,7 +72,9 @@ const src = video ? `/videos/${video}.html` : `/${embed}.html`;
 						const fit = () => {
 							const d = f.contentDocument;
 							if (!d || !d.documentElement) return;
-							const h = d.documentElement.scrollHeight;
+							// documentElement.scrollHeight は iframe 自身の高さを下回らないので、一度伸びると縮まない。中身(.wrap)の実寸で測る
+					const w = d.querySelector('.wrap');
+					const h = w ? Math.ceil(w.getBoundingClientRect().bottom + parseFloat(getComputedStyle(w).marginBottom || '0')) : d.documentElement.scrollHeight;
 							if (h > 100) f.style.height = h + 'px';
 						};
 						f.addEventListener('load', () => {
