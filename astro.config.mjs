@@ -13,6 +13,7 @@ export default defineConfig({
 		'/blog/video-understanding': '/blog/understanding-faster/',
 		'/blog/video-fluency-vs-diff': '/blog/fluency-vs-diff/',
 		'/blog/video-forgetting-mechanisms': '/blog/forgetting-is-six-events/',
+		'/blog/video-pstack': '/blog/decide-before-or-after/',
 	},
 	integrations: [mdx(), sitemap()],
 	fonts: [
