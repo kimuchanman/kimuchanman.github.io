@@ -84,6 +84,12 @@
   .terrain3d-kimukei-skills .lbl.lm::before { content: "★ "; color: var(--past); font-size: 10px; }
   .terrain3d-kimukei-skills .lbl.minor { color: var(--ink-2); font-size: 11px; }
   .terrain3d-kimukei-skills .lbl.hidden { display: none; }
+  .terrain3d-kimukei-skills .zone {
+    position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
+    font-size: 11px; font-weight: 500; letter-spacing: .08em; color: var(--ink-2);
+    text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg);
+  }
+  .terrain3d-kimukei-skills .zone.hidden { display: none; }
 
   .terrain3d-kimukei-skills .tip {
     position: absolute; pointer-events: none; font-size: 12px; line-height: 1.5;
@@ -146,7 +152,7 @@
   //          s: 'cur'(直近1年に歩いた) | 'past'(それより前。last に年) | 'un'(未踏)
   //          lm: true でランドマーク(旗+常時ラベル)。why: なぜ目印か(ホバーで表示)
   //   ROUTES: 歩いた経路。era: 'cur' | 'past'、pts: AREAS の id 列
-  const DATA = {"stage": "2018-04〜2026-10 · 8 年 6 か月", "measuredOn": "2026-10-18", "areas": [{"id": "vue", "name": "Vue.js / Nuxt.js", "x": 8, "z": 12, "v": 4, "loc": 81, "lang": "フロントエンド", "s": "past", "last": 2022, "lm": true, "why": "LIFULL・NoSchool・LIRIS・BASE の 4 か所で使った。Vuetify_meetup で登壇"}, {"id": "react", "name": "React / Next.js", "x": 10, "z": -2, "v": 2, "loc": 38, "lang": "フロントエンド", "s": "cur"}, {"id": "vite", "name": "Vite + TanStack Router", "x": 20, "z": -8, "v": 1, "loc": 25, "lang": "フロントエンド", "s": "cur", "lm": true, "why": "Next.js Pages Router からの段階的な移行を設計した"}, {"id": "ts", "name": "TypeScript", "x": 22, "z": 6, "v": 4, "loc": 79, "lang": "言語", "s": "cur", "lm": true, "why": "2018 年から 4 か所で使い続けている、いちばん長い言語"}, {"id": "mono", "name": "pnpm workspace / Turborepo", "x": 32, "z": -12, "v": 1, "loc": 25, "lang": "ビルド", "s": "cur"}, {"id": "e2e", "name": "E2E テスト(Selenium・Cypress・Playwright)", "x": 30, "z": 18, "v": 3, "loc": 68, "lang": "テスト", "s": "cur"}, {"id": "vrt", "name": "VRT(Playwright + reg-cli)", "x": 38, "z": 12, "v": 1, "loc": 25, "lang": "テスト", "s": "cur", "lm": true, "why": "Chromatic から内製へ移行し、1000 枚超を約 5 分で撮る基盤にした"}, {"id": "unit", "name": "Vitest / Jest", "x": 30, "z": 4, "v": 1, "loc": 25, "lang": "テスト", "s": "cur"}, {"id": "lint", "name": "oxlint / ESLint カスタムルール", "x": 40, "z": -20, "v": 1, "loc": 25, "lang": "DX", "s": "cur"}, {"id": "rails", "name": "Ruby on Rails", "x": 52, "z": 16, "v": 1, "loc": 28, "lang": "バックエンド", "s": "past", "last": 2020}, {"id": "php", "name": "PHP(CakePHP・Laravel)", "x": 55, "z": 6, "v": 2, "loc": 38, "lang": "バックエンド", "s": "past", "last": 2022}, {"id": "event", "name": "非同期・イベント駆動(SNS/SQS)", "x": 64, "z": 12, "v": 1, "loc": 25, "lang": "設計", "s": "past", "last": 2022, "lm": true, "why": "BASE の顧客管理システムを SNS/SQS で非同期化した"}, {"id": "kotlin", "name": "Kotlin / Spring Boot", "x": 60, "z": -4, "v": 2, "loc": 19, "lang": "バックエンド", "s": "past", "last": 2024}, {"id": "nest", "name": "NestJS / Express", "x": 48, "z": -2, "v": 1, "loc": 13, "lang": "バックエンド", "s": "past", "last": 2023}, {"id": "gql", "name": "GraphQL / Apollo", "x": 52, "z": -10, "v": 2, "loc": 19, "lang": "API", "s": "past", "last": 2024}, {"id": "pg", "name": "PostgreSQL", "x": 74, "z": -2, "v": 2, "loc": 19, "lang": "データ", "s": "past", "last": 2024}, {"id": "search", "name": "OpenSearch", "x": 76, "z": 14, "v": 1, "loc": 25, "lang": "データ", "s": "past", "last": 2022}, {"id": "aws", "name": "AWS", "x": 88, "z": 6, "v": 7, "loc": 116, "lang": "インフラ", "s": "cur", "lm": true, "why": "LIFULL から今まで 7 つの期間で使い、今も使っている。SAA を取得"}, {"id": "docker", "name": "Docker", "x": 92, "z": 18, "v": 1, "loc": 28, "lang": "インフラ", "s": "past", "last": 2020}, {"id": "auth0", "name": "Auth0", "x": 84, "z": -8, "v": 1, "loc": 13, "lang": "認証", "s": "past", "last": 2023}, {"id": "gha", "name": "GitHub Actions", "x": 60, "z": -22, "v": 3, "loc": 44, "lang": "CI/CD", "s": "cur", "lm": true, "why": "ARM ランナー移行・動的シャーディングなどで CI の費用を月数十万円規模で削った"}, {"id": "dd", "name": "Datadog", "x": 76, "z": -20, "v": 1, "loc": 25, "lang": "監視", "s": "cur"}, {"id": "ff", "name": "LaunchDarkly", "x": 68, "z": -14, "v": 1, "loc": 25, "lang": "リリース", "s": "cur"}, {"id": "ai", "name": "AI エージェント基盤(Claude Code Skills・MCP)", "x": 20, "z": -22, "v": 2, "loc": 16, "lang": "AI", "s": "cur", "lm": true, "why": "2025-07 から。スキル 10 本以上、MCP サーバー、自動修正エージェント"}, {"id": "adr", "name": "ADR・技術戦略", "x": 88, "z": -22, "v": 2, "loc": 31, "lang": "意思決定", "s": "cur"}], "routes": [{"era": "past", "label": "LIFULL 2018-04〜2020-07", "pts": ["rails", "ts", "vue", "e2e", "docker", "aws"]}, {"era": "past", "label": "NoSchool・LIRIS 2019-04〜2021-02(副業)", "pts": ["php", "vue", "e2e"]}, {"era": "past", "label": "BASE 2020-08〜2022-08", "pts": ["vue", "php", "event", "search", "aws"]}, {"era": "past", "label": "エス・エム・エス 2022-09〜2024-09", "pts": ["react", "nest", "gql", "kotlin", "pg", "auth0", "aws"]}, {"era": "cur", "label": "エス・エム・エス 開発推進 2024-10〜", "pts": ["ai", "vite", "mono", "lint", "gha", "ff", "dd", "adr", "aws"]}], "defaultHeight": "loc", "visitLabel": "使った職場・案件数", "locSub": "実務で使った月数", "locUnit": "か月", "colorLabel": "使った職場・案件の数"};
+  const DATA = {"stage": "2018-04〜2026-10 · 8 年 6 か月", "measuredOn": "2026-10-18", "areas": [{"id": "vue", "name": "Vue.js / Nuxt.js", "x": 9, "z": 17, "v": 4, "loc": 81, "lang": "フロントエンド", "s": "past", "last": 2022, "lm": true, "why": "LIFULL・NoSchool・LIRIS・BASE の 4 か所で使った。Vuetify_meetup で登壇"}, {"id": "react", "name": "React / Next.js", "x": 9, "z": 7, "v": 2, "loc": 38, "lang": "フロントエンド", "s": "cur"}, {"id": "vite", "name": "Vite + TanStack Router", "x": 23, "z": 7, "v": 1, "loc": 25, "lang": "フロントエンド", "s": "cur", "lm": true, "why": "Next.js Pages Router からの段階的な移行を設計した"}, {"id": "ts", "name": "TypeScript", "x": 23, "z": 17, "v": 4, "loc": 79, "lang": "言語", "s": "cur", "lm": true, "why": "2018 年から 4 か所で使い続けている、いちばん長い言語"}, {"id": "mono", "name": "pnpm workspace / Turborepo", "x": 41, "z": -18, "v": 1, "loc": 25, "lang": "ビルド", "s": "cur"}, {"id": "e2e", "name": "E2E テスト(Selenium・Cypress・Playwright)", "x": 10, "z": -9, "v": 3, "loc": 68, "lang": "テスト", "s": "cur"}, {"id": "vrt", "name": "VRT(Playwright + reg-cli)", "x": 16, "z": -18, "v": 1, "loc": 25, "lang": "テスト", "s": "cur", "lm": true, "why": "Chromatic から内製へ移行し、1000 枚超を約 5 分で撮る基盤にした"}, {"id": "unit", "name": "Vitest / Jest", "x": 23, "z": -9, "v": 1, "loc": 25, "lang": "テスト", "s": "cur"}, {"id": "lint", "name": "oxlint / ESLint カスタムルール", "x": 57, "z": -8, "v": 1, "loc": 25, "lang": "DX", "s": "cur"}, {"id": "rails", "name": "Ruby on Rails", "x": 41, "z": 18, "v": 1, "loc": 28, "lang": "バックエンド", "s": "past", "last": 2020}, {"id": "php", "name": "PHP(CakePHP・Laravel)", "x": 41, "z": 7, "v": 2, "loc": 38, "lang": "バックエンド", "s": "past", "last": 2022}, {"id": "event", "name": "非同期・イベント駆動(SNS/SQS)", "x": 57, "z": 18, "v": 1, "loc": 25, "lang": "設計", "s": "past", "last": 2022, "lm": true, "why": "BASE の顧客管理システムを SNS/SQS で非同期化した"}, {"id": "kotlin", "name": "Kotlin / Spring Boot", "x": 49, "z": 7, "v": 2, "loc": 19, "lang": "バックエンド", "s": "past", "last": 2024}, {"id": "nest", "name": "NestJS / Express", "x": 57, "z": 7, "v": 1, "loc": 13, "lang": "バックエンド", "s": "past", "last": 2023}, {"id": "gql", "name": "GraphQL / Apollo", "x": 49, "z": 18, "v": 2, "loc": 19, "lang": "API", "s": "past", "last": 2024}, {"id": "pg", "name": "PostgreSQL", "x": 72, "z": 6, "v": 2, "loc": 19, "lang": "データ", "s": "past", "last": 2024}, {"id": "search", "name": "OpenSearch", "x": 72, "z": 18, "v": 1, "loc": 25, "lang": "データ", "s": "past", "last": 2022}, {"id": "aws", "name": "AWS", "x": 82, "z": 12, "v": 7, "loc": 116, "lang": "インフラ", "s": "cur", "lm": true, "why": "LIFULL から今まで 7 つの期間で使い、今も使っている。SAA を取得"}, {"id": "docker", "name": "Docker", "x": 92, "z": 18, "v": 1, "loc": 28, "lang": "インフラ", "s": "past", "last": 2020}, {"id": "auth0", "name": "Auth0", "x": 92, "z": 6, "v": 1, "loc": 13, "lang": "認証", "s": "past", "last": 2023}, {"id": "gha", "name": "GitHub Actions", "x": 41, "z": -8, "v": 3, "loc": 44, "lang": "CI/CD", "s": "cur", "lm": true, "why": "ARM ランナー移行・動的シャーディングなどで CI の費用を月数十万円規模で削った"}, {"id": "dd", "name": "Datadog", "x": 74, "z": -9, "v": 1, "loc": 25, "lang": "監視", "s": "cur"}, {"id": "ff", "name": "LaunchDarkly", "x": 88, "z": -9, "v": 1, "loc": 25, "lang": "リリース", "s": "cur"}, {"id": "ai", "name": "AI エージェント基盤(Claude Code Skills・MCP)", "x": 57, "z": -18, "v": 2, "loc": 16, "lang": "AI", "s": "cur", "lm": true, "why": "2025-07 から。スキル 10 本以上、MCP サーバー、自動修正エージェント"}, {"id": "adr", "name": "ADR・技術戦略", "x": 81, "z": -18, "v": 2, "loc": 31, "lang": "意思決定", "s": "cur"}], "routes": [{"era": "past", "label": "LIFULL 2018-04〜2020-07", "pts": ["rails", "ts", "vue", "e2e", "docker", "aws"]}, {"era": "past", "label": "NoSchool・LIRIS 2019-04〜2021-02(副業)", "pts": ["php", "vue", "e2e"]}, {"era": "past", "label": "BASE 2020-08〜2022-08", "pts": ["vue", "php", "event", "search", "aws"]}, {"era": "past", "label": "エス・エム・エス 2022-09〜2024-09", "pts": ["react", "nest", "gql", "kotlin", "pg", "auth0", "aws"]}, {"era": "cur", "label": "エス・エム・エス 開発推進 2024-10〜", "pts": ["ai", "vite", "mono", "lint", "gha", "ff", "dd", "adr", "aws"]}], "defaultHeight": "loc", "visitLabel": "使った職場・案件数", "zones": [{"name": "フロントエンド", "x0": 2, "x1": 31, "z0": 1, "z1": 24}, {"name": "バックエンド", "x0": 35, "x1": 63, "z0": 1, "z1": 24}, {"name": "データ・インフラ", "x0": 67, "x1": 98, "z0": 1, "z1": 24}, {"name": "テスト", "x0": 2, "x1": 31, "z0": -24, "z1": -2}, {"name": "開発基盤(CI・DX・AI)", "x0": 35, "x1": 63, "z0": -24, "z1": -2}, {"name": "運用・意思決定", "x0": 67, "x1": 98, "z0": -24, "z1": -2}], "locSub": "実務で使った月数", "locUnit": "か月", "colorLabel": "使った職場・案件の数"};
   const AREAS = DATA.areas, ROUTES = DATA.routes;
   const byId = Object.fromEntries(AREAS.map(a => [a.id, a]));
   const VMAX = Math.log10(Math.max(1, ...AREAS.map(a => a.v)) + 1);
@@ -288,6 +294,41 @@
     });
   }
 
+  // ---- zones(任意): 近い領域をまとめるエリア。地面に沿った枠線と、手前の辺の中央に名前を出す ----
+  const ZONES = DATA.zones || [];
+  const zoneGroup = new THREE.Group();
+  scene.add(zoneGroup);
+  const zoneLabels = ZONES.map(zn => {
+    const el = document.createElement('div');
+    el.className = 'zone';
+    el.textContent = zn.name;
+    root.appendChild(el);
+    return { zn, el };
+  });
+  function rebuildZones() {
+    while (zoneGroup.children.length) {
+      const m = zoneGroup.children.pop();
+      m.geometry.dispose(); m.material.dispose();
+    }
+    ZONES.forEach(zn => {
+      const corners = [[zn.x0, zn.z0], [zn.x1, zn.z0], [zn.x1, zn.z1], [zn.x0, zn.z1], [zn.x0, zn.z0]];
+      const pts = [];
+      for (let k = 0; k < 4; k++) {
+        const [ax, az] = corners[k], [bx, bz] = corners[k + 1];
+        const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 0.5);
+        for (let i = 0; i < n; i++) {
+          const x = ax + (bx - ax) * i / n, z = az + (bz - az) * i / n;
+          pts.push(new THREE.Vector3(x, heightAt(x, z) + 0.15, z));
+        }
+      }
+      pts.push(pts[0].clone());
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineDashedMaterial({ color: T.ink, dashSize: 0.8, gapSize: 0.6, transparent: true, opacity: 0.55 }));
+      line.computeLineDistances();
+      zoneGroup.add(line);
+    });
+  }
+
   // ---- landmarks + labels ----
   const lmGroup = new THREE.Group();
   scene.add(lmGroup);
@@ -390,7 +431,7 @@
   root.querySelector('.alllabels').addEventListener('change', e => { root.classList.toggle('all-labels', e.target.checked); });
   root.querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener('change', e => { hMode = e.target.value; rebuildAll(); }));
 
-  function rebuildAll() { applyMode(); rebuildTerrain(); rebuildRoutes(); placeLandmarks(); }
+  function rebuildAll() { applyMode(); rebuildTerrain(); rebuildRoutes(); rebuildZones(); placeLandmarks(); }
   function retheme() {
     T = tokens();
     frame.material.color.copy(T.ink);
@@ -443,6 +484,13 @@
       }
       placed.push(rect);
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+    }
+    for (const { zn, el } of zoneLabels) {
+      const x = (zn.x0 + zn.x1) / 2, z = zn.z1 - 1.5;
+      v3.set(x, heightAt(x, z) + 0.5, z).project(camera);
+      if (v3.z > 1) { el.classList.add('hidden'); continue; }
+      el.classList.remove('hidden');
+      el.style.transform = `translate(${((v3.x + 1) / 2 * cw).toFixed(1)}px, ${((1 - v3.y) / 2 * ch).toFixed(1)}px) translate(-50%, -50%)`;
     }
     requestAnimationFrame(frameLoop);
   }
