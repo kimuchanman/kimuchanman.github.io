@@ -20,7 +20,7 @@ pubDate: '2026-10-01'
 
 <iframe src="/videos/understanding.html" title="解説動画: 理解の組み立て方" loading="lazy" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px;background:#fff"></iframe>
 
-<p><a href="/videos/understanding.html" target="_blank" rel="noopener">動画を別タブで開く</a></p>
+<p><a href="/videos/understanding.html" target="_blank" rel="noopener">動画を別タブで開く</a>。音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。</p>
 
 ## 「頭の片隅に置かれた状態」を目標にする
 

@@ -10,7 +10,7 @@ pubDate: '2026-10-18'
 
 <iframe src="/videos/fluency-vs-diff.html" title="解説動画: 差分と流暢さ" loading="lazy" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px;background:#fff"></iframe>
 
-<p><a href="/videos/fluency-vs-diff.html" target="_blank" rel="noopener">動画を別タブで開く</a></p>
+<p><a href="/videos/fluency-vs-diff.html" target="_blank" rel="noopener">動画を別タブで開く</a>。音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。</p>
 
 ## 読むだけの「わかった」は流暢さ
 
