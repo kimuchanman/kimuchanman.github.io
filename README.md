@@ -6,7 +6,8 @@ Astro で作った静的サイト。main に push すると GitHub Actions が b
 - 記事: `src/content/blog/*.md`。frontmatter は `title` `description` `pubDate`(任意で `updatedDate` `heroImage` `draft`)
 - `.md` の中では生の HTML と `<script>` がそのまま出力される。`.mdx` では `<script>` が Astro に処理されるので、そのまま出したいときは `<script is:inline>` と書く
 - `draft: true` の記事はサイトに出ない。ただしリポジトリは公開なので、ファイル自体は誰でも読める。公開直前まで下書きは別の非公開リポジトリに置く
-- 単体の HTML(artifact や解説動画など)は `public/` に置くと、そのパスでそのまま配信される。100 MB 超のファイルは GitHub が受け付けない
+- 解説動画は 1 本を 1 記事にする。HTML を `public/videos/<slug>.html` に置き、`src/content/blog/video-<slug>.md` の frontmatter に `video: '<slug>'` と `duration: '9:26'` を書くと、全幅のプレイヤー(VideoPost レイアウト)で表示され、一覧に「動画」ラベルが付く。本文には場面一覧・出典・VOICEVOX のクレジットを書く
+- 単体の HTML(artifact など)は `public/` に置くと、そのパスでそのまま配信される。100 MB 超のファイルは GitHub が受け付けない
 
 ```sh
 pnpm install
