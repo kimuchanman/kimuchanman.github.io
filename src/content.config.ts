@@ -14,6 +14,8 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			// true の記事はサイトに出さない(リポジトリ上では見える)
+			draft: z.boolean().default(false),
 		}),
 });
 
