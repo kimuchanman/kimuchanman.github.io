@@ -6,7 +6,12 @@ pubDate: '2026-10-18'
 
 記事を読んでいる間は完全にわかった気がした。翌日、何も見ずに説明しようとしたら出てこない。この経験を何度もしているうちに、読んでいる間の「わかった」は理解とは別のものを測っているのではないかと思うようになりました。調べてみると、別のものでした。
 
-同じ内容を解説動画 [流暢性バイアスに囚われない、予測差分から導く真の理解(動画版)](/blog/video-fluency-vs-diff/)(5 分)にもしています。文章より先に見ても、あとで見ても構いません。
+同じ内容を解説動画(5 分)にもしています。文章より先に見ても、あとで見ても構いません。
+
+<figure class="video-embed">
+<iframe src="/videos/fluency-vs-diff.html" title="流暢性バイアスに囚われない、予測差分から導く真の理解(解説動画 5:30)" scrolling="no" loading="lazy"></iframe>
+<figcaption><a href="/videos/fluency-vs-diff.html" target="_blank" rel="noopener">動画だけを別タブで開く</a>(台本と出典つき)</figcaption>
+</figure>
 
 ## 読むだけの「わかった」は流暢さ
 
@@ -67,3 +72,13 @@ Rescorla と Wagner が 1972 年に出した学習の式があります。
 - Rescorla & Wagner (1972) の式: https://en.wikipedia.org/wiki/Rescorla%E2%80%93Wagner_model
 - Kornell, Hays & Bjork (2009) Unsuccessful retrieval attempts enhance subsequent learning. Journal of Experimental Psychology: Learning, Memory, and Cognition 35(4). http://web.williams.edu/Psychology/Faculty/Kornell/Publications/Kornell.Hays.Bjork.2009.pdf (67% / 55% は実験 4、38 時間後の 47% / 35% は実験 5)
 - 処理の流暢さ: https://en.wikipedia.org/wiki/Processing_fluency
+
+## 動画の出典
+
+- Kornell, Hays & Bjork (2009) Unsuccessful retrieval attempts enhance subsequent learning. JEP:LMC 35(4) http://web.williams.edu/Psychology/Faculty/Kornell/Publications/Kornell.Hays.Bjork.2009.pdf(実験 1: .41 vs .31、実験 4: 1 回 13 秒で揃えて .67 vs .55、実験 5: 38 時間後 .47 vs .35)
+- Rhodes & Castel (2008) Memory predictions are influenced by perceptual information. JEP:General 137(4) https://pubmed.ncbi.nlm.nih.gov/18999356/(要旨のみ。数値は使っていない)
+- Roediger & Karpicke (2006) Test-enhanced learning. Psychological Science 17(3) https://pubmed.ncbi.nlm.nih.gov/16507066/(要旨のみ。数値は使っていない)
+- https://en.wikipedia.org/wiki/Rescorla%E2%80%93Wagner_model
+- https://en.wikipedia.org/wiki/Processing_fluency
+
+音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。

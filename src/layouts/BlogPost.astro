@@ -73,6 +73,28 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			.prose :global(th) {
 				background: rgb(var(--gray-light), 40%);
 			}
+			/* 本文に埋め込む解説動画。プレイヤーは横幅が要るので本文の 720px からはみ出して広げる */
+			.prose :global(.video-embed) {
+				position: relative;
+				left: 50%;
+				transform: translateX(-50%);
+				width: min(1100px, calc(100vw - 2em));
+				margin: 1.5em 0;
+			}
+			.prose :global(.video-embed iframe) {
+				display: block;
+				width: 100%;
+				height: 620px;
+				border: 1px solid #ddd;
+				border-radius: 12px;
+				background: #fff;
+				box-shadow: var(--box-shadow);
+			}
+			.prose :global(.video-embed figcaption) {
+				margin-top: 0.6em;
+				text-align: center;
+				color: rgb(var(--gray));
+			}
 			.prose :global(td:first-child), .prose :global(th:first-child) {
 				white-space: nowrap;
 			}
@@ -103,6 +125,31 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				</div>
 			</article>
 		</main>
+		<script is:inline>
+			// 埋め込んだ動画は、見出し・台本・出典を隠してプレイヤーだけにし、中身の高さに合わせる
+			// (台本と出典は「動画だけを別タブで開く」の単体ページに残す。同一オリジンなので中身を触れる)
+			document.querySelectorAll('.video-embed iframe').forEach((f) => {
+				const fit = () => {
+					const d = f.contentDocument;
+					if (!d || !d.documentElement) return;
+					const h = d.documentElement.scrollHeight;
+					if (h > 100) f.style.height = h + 'px';
+				};
+				const setup = () => {
+					const d = f.contentDocument;
+					if (!d || !d.head || d.getElementById('embed-style')) return;
+					const s = d.createElement('style');
+					s.id = 'embed-style';
+					s.textContent = '.head,.transcript,.foot{display:none!important}';
+					d.head.appendChild(s);
+					fit();
+					if ('ResizeObserver' in window) new ResizeObserver(fit).observe(d.documentElement);
+				};
+				f.addEventListener('load', setup);
+				if (f.contentDocument && f.contentDocument.readyState === 'complete') setup();
+				window.addEventListener('resize', fit);
+			});
+		</script>
 		<script type="module" is:inline>
 			// ```mermaid の fence(shiki が <pre data-language="mermaid"> にする)を図に置き換える
 			const fences = document.querySelectorAll('pre[data-language="mermaid"]');

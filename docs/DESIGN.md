@@ -22,7 +22,7 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 | ページ構成 | トップ = 記事一覧、`/blog/<slug>/` = 記事 | トップと一覧を分ける意図がないので 1 つにした。`/blog` はトップへ転送 |
 | 一覧 | 1 記事 1 行(日付 + 題名)、動画には「動画」ラベル | 題名を横に並べると比較する意味がないのに視線が往復する |
 | 文章記事 | `.md`、BlogPost レイアウト | `.mdx` は script を Astro が処理するので、生で出したいときに `is:inline` が要る |
-| 動画記事 | `video` と `duration` を frontmatter に持つ `.md`、VideoPost レイアウトで全幅表示 | 文章の途中に挟むと読みづらい。動画は動画で 1 本の記事にする |
+| 動画と文章 | 同じ内容の文章記事があれば、動画は文章記事の本文に埋め込む(本文より広い幅、プレイヤーだけ)。文章記事の無い動画だけ、`video` と `duration` を持つ動画記事にする | 同じ内容で記事が 2 本あると一覧が増え、読み手がどちらを読むか迷う。台本と出典は「動画だけを別タブで開く」の単体ページで読める(2026-10-18 に動画記事 3 本を統合した) |
 | 図の記事 | `embed: 'maps/<slug>'` を持つ `.md`。HTML は `public/maps/` に置き、動画と同じ全幅の枠で表示する | 地形図やオントロジーマップは横幅 720px の本文に収めると文字が読めない。枠の仕組みは動画と同じものを使う |
 | 動画の埋め込み | 同一オリジンの iframe。読み込み後に中身の高さへ合わせる | 動画 HTML は自前の CSS と JS を持つので、直接差し込むとブログ側と干渉する。iframe なら干渉せず、高さは JS で解決できる |
 | 図 | Mermaid の fence をブラウザ側で描画(cdnjs の固定版) | ビルド時描画は Playwright が要る。読者側で描いても数十 KB で済む |
@@ -55,7 +55,7 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 ## 運用
 
 - 記事を書く: `src/content/blog/<slug>.md` を置いて main に push する
-- 動画を足す: `public/videos/<slug>.html` と `src/content/blog/video-<slug>.md` を置く
-- 図を足す: `public/maps/<slug>.html`(doctype と charset 付き)と、`embed` を書いた記事を置く
+- 動画を足す: `public/videos/<slug>.html`(favicon の link を足す)を置き、同じ内容の文章記事があればその本文に埋め込む。無ければ `src/content/blog/video-<slug>.md` を置く
+- 図を足す: `public/maps/<slug>.html`(doctype・charset・favicon の link 付き)と、`embed` を書いた記事を置く
 - 確認する: `pnpm build` が通ること、Mermaid を使った記事はブラウザで図が出ること
 - 費用: GitHub Pages と Actions は公開リポジトリでは無料。上限はサイト 1 GB、転送 月 100 GB

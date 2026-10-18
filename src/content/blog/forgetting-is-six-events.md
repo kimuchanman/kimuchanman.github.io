@@ -8,7 +8,12 @@ pubDate: '2026-10-17'
 
 調べてみると、「忘れた」と一言で呼んでいるものが、少なくとも 6 つの別の出来事に分かれていました。この記事はその 6 つを、日常の例から順に書きます。LLM の話は最後に少しだけ触れます。
 
-同じ内容を解説動画 [忘却を分解すると 6 つの事象になる](/blog/video-forgetting-mechanisms/)(9 分)にもしています。文章より先に見ても、あとで見ても構いません。
+同じ内容を解説動画(9 分)にもしています。文章より先に見ても、あとで見ても構いません。
+
+<figure class="video-embed">
+<iframe src="/videos/forgetting-mechanisms.html" title="忘却を分解すると 6 つの事象になる(解説動画 9:26)" scrolling="no" loading="lazy"></iframe>
+<figcaption><a href="/videos/forgetting-mechanisms.html" target="_blank" rel="noopener">動画だけを別タブで開く</a>(台本と出典つき)</figcaption>
+</figure>
 
 ## 全体像
 
@@ -139,3 +144,18 @@ Tulving は 1974 年に、忘れたとは痕跡が消えたことではなくた
 - Tulving & Pearlstone (1966)、Tulving (1974): https://en.wikipedia.org/wiki/Cue-dependent_forgetting
 - Loftus & Palmer (1974) Reconstruction of automobile destruction. Journal of Verbal Learning and Verbal Behavior 13(5)
 - Nader, Schafe & LeDoux (2000): https://en.wikipedia.org/wiki/Memory_consolidation
+
+## 動画の出典
+
+- Nickerson & Adams (1979) Long-term memory for a common object. Cognitive Psychology 11(3) https://en.wikipedia.org/wiki/Encoding_(memory) 経由(1 セント硬貨。数値は使っていない)
+- Rinck (1999) Memory for everyday objects: Where are the digits on numerical keypads? Applied Cognitive Psychology 13(4) 同上経由
+- https://en.wikipedia.org/wiki/Forgetting_curve(Ebbinghaus の節約率の近似式 b = 100k / ((log t)^c + k), c=1.25, k=1.84。動画の 57/47/30/21% はこの式から計算した)
+- https://en.wikipedia.org/wiki/Interference_theory(Jenkins & Dallenbach 1924 の睡眠対覚醒、Greenberg & Underwood 1950 の 70/40/25%、Underwood 1957)
+- https://en.wikipedia.org/wiki/Memory_consolidation(Squire & Alvarez 1995 の標準モデル、Nader, Schafe & LeDoux 2000 の再固定化)
+- McClelland, McNaughton & O'Reilly (1995) Why there are complementary learning systems in the hippocampus and neocortex. Psychological Review 102(3)
+- https://en.wikipedia.org/wiki/Event_perception(Radvansky, Krawietz & Tamplin 2011 の戸口効果)
+- https://en.wikipedia.org/wiki/Cue-dependent_forgetting(Tulving & Pearlstone 1966、Tulving 1974 American Scientist)
+- Loftus & Palmer (1974) Reconstruction of automobile destruction. JVLVB 13(5) https://en.wikipedia.org/wiki/Elizabeth_Loftus(41/34/32 mph)と https://www.simplypsychology.org/loftus-palmer.html(ガラス 32% 対 14%)
+- notes/2026-10-17-人間の忘却から借りる部品.md(human-llm-coexistence リポジトリ。対応表の出どころ)
+
+音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。

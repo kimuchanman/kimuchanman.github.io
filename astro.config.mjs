@@ -7,7 +7,13 @@ import { defineConfig, fontProviders } from 'astro/config';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://kimuchanman.github.io',
-	redirects: { '/blog': '/' },
+	redirects: {
+		'/blog': '/',
+		// 動画記事は文章記事に統合した(2026-10-18)。古い URL は文章記事へ送る
+		'/blog/video-understanding': '/blog/understanding-faster/',
+		'/blog/video-fluency-vs-diff': '/blog/fluency-vs-diff/',
+		'/blog/video-forgetting-mechanisms': '/blog/forgetting-is-six-events/',
+	},
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{

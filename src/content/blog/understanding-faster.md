@@ -17,7 +17,12 @@ updatedDate: '2026-10-09'
 
 アウトプットは、AI からの口頭インタビューに答えるのがおすすめだ。声に出した内容は、黙読しただけの内容より記憶に残りやすい(プロダクション効果)。さっさとアウトプットして、AI に絶望の谷へ叩き落としてもらおう。
 
-この記事の背景にある「人の理解はどう組み上がるか」は、解説動画 [理解を高速化する(動画版)](/blog/video-understanding/)(12 分)にまとめています。記事と同じ内容ではなく、認知科学側の土台です。
+この記事の背景にある「人の理解はどう組み上がるか」は、解説動画(12 分)にまとめています。記事と同じ内容ではなく、認知科学側の土台です。
+
+<figure class="video-embed">
+<iframe src="/videos/understanding.html" title="理解を高速化する(解説動画 12:26)" scrolling="no" loading="lazy"></iframe>
+<figcaption><a href="/videos/understanding.html" target="_blank" rel="noopener">動画だけを別タブで開く</a>(台本と出典つき)</figcaption>
+</figure>
 
 ## 「頭の片隅に置かれた状態」を目標にする
 
@@ -50,3 +55,22 @@ updatedDate: '2026-10-09'
 | アウトプット | 答える、解く、書く | 検索練習、生成効果、プロダクション効果 |
 
 チャネルを増やしてとにかく触り、片隅に置く。片隅に置かれたものは、机を離れている間に脳が消化する。整理されたものをアウトプットで固定し、固定されたものがまた次の入口を広げる。この循環を回し続けたことで、理解に至るまでの投入時間が減った。やることは一つで、できるだけ早く「頭の片隅に置かれた状態」に持っていくこと。理解はそのあとで進む。
+
+## 動画の出典
+
+- Bransford, J. D., & Johnson, M. K. (1972). Contextual prerequisites for understanding. J. Verbal Learning and Verbal Behavior, 11(6), 717-726. https://doi.org/10.1016/S0022-5371(72)80006-9
+- https://memlab.yale.edu/sites/default/files/files/1972_Bransford_Johnson_JVLVB.pdf
+- Bartlett, F. C. (1932). Remembering. Cambridge University Press, pp.65-67. https://archive.org/details/Bartlett1932Remembering
+- Chase, W. G., & Simon, H. A. (1973). Perception in chess. Cognitive Psychology, 4(1), 55-81. https://doi.org/10.1016/0010-0285(73)90004-2
+- Cowan, N. (2001). The magical number 4 in short-term memory. Behavioral and Brain Sciences, 24(1), 87-114. https://doi.org/10.1017/S0140525X01003922
+- Bransford, J. D., Barclay, J. R., & Franks, J. J. (1972). Sentence memory: A constructive versus interpretive approach. Cognitive Psychology, 3(2), 193-209. https://doi.org/10.1016/0010-0285(72)90003-5
+- Zwaan, R. A., & Radvansky, G. A. (1998). Situation models in language comprehension and memory. Psychological Bulletin, 123(2), 162-185(カメと丸太の実験の確認に使用). https://sites.ualberta.ca/~dmiall/Cognitive/Readings/Zwaan_Radvansky_1998.pdf
+- Kintsch, W. (1988). The role of knowledge in discourse comprehension: A construction-integration model. Psychological Review, 95(2), 163-182. https://doi.org/10.1037/0033-295X.95.2.163
+- Chi, M. T. H., Feltovich, P. J., & Glaser, R. (1981). Categorization and representation of physics problems by experts and novices. Cognitive Science, 5(2), 121-152. https://doi.org/10.1207/s15516709cog0502_2
+- Gick, M. L., & Holyoak, K. J. (1980). Analogical problem solving. Cognitive Psychology, 12(3), 306-355. https://doi.org/10.1016/0010-0285(80)90013-4
+- Chi, M. T. H., Bassok, M., Lewis, M. W., Reimann, P., & Glaser, R. (1989). Self-explanations. Cognitive Science, 13(2), 145-182. https://doi.org/10.1207/s15516709cog1302_1
+- Chi, M. T. H., de Leeuw, N., Chiu, M.-H., & LaVancher, C. (1994). Eliciting self-explanations improves understanding. Cognitive Science, 18(3), 439-477. https://doi.org/10.1207/s15516709cog1803_3
+- Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning. Psychological Science, 17(3), 249-255. https://doi.org/10.1111/j.1467-9280.2006.01693.x
+- Rozenblit, L., & Keil, F. (2002). The misunderstood limits of folk science: an illusion of explanatory depth. Cognitive Science, 26(5), 521-562. https://doi.org/10.1207/s15516709cog2605_1
+
+音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。
