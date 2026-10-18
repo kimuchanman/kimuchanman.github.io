@@ -1,5 +1,5 @@
 ---
-title: '忘却の六つの出来事'
+title: '忘却を分解すると 6 つの事象になる'
 description: '人間の忘却の仕組み 6 つ(入らない・減衰・干渉・要旨化・手がかりの喪失・再固定化)と、LLM の memory アーキテクチャへの対応'
 pubDate: '2026-10-17'
 video: 'forgetting-mechanisms'
