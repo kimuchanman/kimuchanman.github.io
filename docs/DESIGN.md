@@ -23,6 +23,7 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 | 一覧 | 1 記事 1 行(日付 + 題名)、動画には「動画」ラベル | 題名を横に並べると比較する意味がないのに視線が往復する |
 | 文章記事 | `.md`、BlogPost レイアウト | `.mdx` は script を Astro が処理するので、生で出したいときに `is:inline` が要る |
 | 動画記事 | `video` と `duration` を frontmatter に持つ `.md`、VideoPost レイアウトで全幅表示 | 文章の途中に挟むと読みづらい。動画は動画で 1 本の記事にする |
+| 図の記事 | `embed: 'maps/<slug>'` を持つ `.md`。HTML は `public/maps/` に置き、動画と同じ全幅の枠で表示する | 地形図やオントロジーマップは横幅 720px の本文に収めると文字が読めない。枠の仕組みは動画と同じものを使う |
 | 動画の埋め込み | 同一オリジンの iframe。読み込み後に中身の高さへ合わせる | 動画 HTML は自前の CSS と JS を持つので、直接差し込むとブログ側と干渉する。iframe なら干渉せず、高さは JS で解決できる |
 | 図 | Mermaid の fence をブラウザ側で描画(cdnjs の固定版) | ビルド時描画は Playwright が要る。読者側で描いても数十 KB で済む |
 | 表 | Markdown の表をそのまま使う | BlogPost レイアウトに罫線の style を持つ |
@@ -55,5 +56,6 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 
 - 記事を書く: `src/content/blog/<slug>.md` を置いて main に push する
 - 動画を足す: `public/videos/<slug>.html` と `src/content/blog/video-<slug>.md` を置く
+- 図を足す: `public/maps/<slug>.html`(doctype と charset 付き)と、`embed` を書いた記事を置く
 - 確認する: `pnpm build` が通ること、Mermaid を使った記事はブラウザで図が出ること
 - 費用: GitHub Pages と Actions は公開リポジトリでは無料。上限はサイト 1 GB、転送 月 100 GB

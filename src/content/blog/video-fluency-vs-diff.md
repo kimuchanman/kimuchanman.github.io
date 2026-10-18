@@ -8,16 +8,6 @@ duration: '5:30'
 
 予測を立てずに読むだけの人はなぜ「わかった」と感じるのか。信号の違い(予測誤差と流暢さ)。ずんだもんが質問し、四国めたんが答える形式で、5:30 です。文章で読むなら [流暢性バイアスに囚われない、予測差分から導く真の理解](/blog/fluency-vs-diff/) です。
 
-## 場面
-
-1. つかみ: 緑で通る初回実行
-2. 全体像: 2 本のレーン
-3. 仕組み 1: 差分が更新の信号
-4. 仕組み 2: 読むだけの信号は流暢さ
-5. 仕組み 3: 確信と正しさがずれる
-6. よくある誤解: 時間をかければ差分が出る
-7. まとめ
-
 ## 出典
 
 - Kornell, Hays & Bjork (2009) Unsuccessful retrieval attempts enhance subsequent learning. JEP:LMC 35(4) http://web.williams.edu/Psychology/Faculty/Kornell/Publications/Kornell.Hays.Bjork.2009.pdf(実験 1: .41 vs .31、実験 4: 1 回 13 秒で揃えて .67 vs .55、実験 5: 38 時間後 .47 vs .35)

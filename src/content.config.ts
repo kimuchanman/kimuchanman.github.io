@@ -19,6 +19,8 @@ const blog = defineCollection({
 			// 解説動画の記事: public/videos/<video>.html を本体として全幅で表示する
 			video: z.string().optional(),
 			duration: z.string().optional(),
+			// 図の記事: public/<embed>.html(例 'maps/git-ontology')を動画と同じ全幅の枠で表示する
+			embed: z.string().optional(),
 		}),
 });
 

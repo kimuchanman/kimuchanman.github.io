@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kimukei のスキル地形図</title>
+<style>html,body{height:100%;margin:0}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600&family=IBM+Plex+Sans+JP:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  .terrain3d-kimukei-skills {
+    --bg: #eef0ea;
+    --panel: rgba(255, 255, 255, 0.72);
+    --ink: #1f2a24;
+    --ink-2: #5c6a62;
+    --line: #cfd4cb;
+    --plain: #d9dcd3;
+    --cur: #3f9159;
+    --past: #b5804e;
+    --untrod: #c9cdc5;
+    --route-cur: #1f2a24;
+    --route-past: #7a5230;
+    --focus: #2b6cb0;
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .terrain3d-kimukei-skills { color-scheme: dark; --bg: #151a18; --panel: rgba(24,30,27,0.78); --ink: #e6eae2; --ink-2: #9aa79f; --line: #313a35; --plain: #2a332e; --cur: #4f9f68; --past: #b07e50; --untrod: #4a544e; --route-cur: #f1f4ec; --route-past: #d9a06a; --focus: #7fb3ff; }
+  }
+  :root[data-theme="dark"] .terrain3d-kimukei-skills { color-scheme: dark; --bg: #151a18; --panel: rgba(24,30,27,0.78); --ink: #e6eae2; --ink-2: #9aa79f; --line: #313a35; --plain: #2a332e; --cur: #4f9f68; --past: #b07e50; --untrod: #4a544e; --route-cur: #f1f4ec; --route-past: #d9a06a; --focus: #7fb3ff; }
+  .terrain3d-kimukei-skills *, .terrain3d-kimukei-skills *::before, .terrain3d-kimukei-skills *::after { box-sizing: border-box; }
+  .terrain3d-kimukei-skills .stage { position: absolute; inset: 0; }
+  .terrain3d-kimukei-skills .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .terrain3d-kimukei-skills .stage canvas.dragging { cursor: grabbing; }
+
+  .terrain3d-kimukei-skills .hud {
+    position: absolute; left: 12px; right: 12px; top: 12px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;
+    pointer-events: none;
+  }
+  .terrain3d-kimukei-skills .card {
+    background: var(--panel); backdrop-filter: blur(8px);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 12px; pointer-events: auto; margin: 0;
+  }
+  .terrain3d-kimukei-skills .ttl {
+    font-family: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+    font-weight: 600; font-size: 18px; margin: 0; letter-spacing: 0.02em; line-height: 1.3;
+  }
+  .terrain3d-kimukei-skills .sub { color: var(--ink-2); font-size: 12px; margin-top: 2px; }
+  .terrain3d-kimukei-skills .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; margin-top: 6px; }
+  .terrain3d-kimukei-skills .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .terrain3d-kimukei-skills .sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+  .terrain3d-kimukei-skills .sw.grad-cur { width: 28px; background: linear-gradient(90deg, var(--untrod), var(--cur)); }
+  .terrain3d-kimukei-skills .sw.grad-past { width: 28px; background: linear-gradient(90deg, var(--untrod), var(--past)); }
+  .terrain3d-kimukei-skills .ctl { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; }
+  .terrain3d-kimukei-skills .ctl label { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-weight: 400; }
+  .terrain3d-kimukei-skills .ctl .grp { display: inline-flex; gap: 6px; align-items: center; padding-right: 8px; border-right: 1px solid var(--line); }
+  .terrain3d-kimukei-skills button {
+    font: inherit; font-size: 12px; color: var(--ink); background: transparent;
+    border: 1px solid var(--line); border-radius: 4px; padding: 3px 9px; cursor: pointer; margin: 0;
+  }
+  .terrain3d-kimukei-skills button:hover { border-color: var(--ink-2); }
+  .terrain3d-kimukei-skills button:focus-visible, .terrain3d-kimukei-skills input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .terrain3d-kimukei-skills input[type="range"] { width: 90px; margin: 0; }
+  .terrain3d-kimukei-skills input[type="radio"], .terrain3d-kimukei-skills input[type="checkbox"] { margin: 0; }
+
+  .terrain3d-kimukei-skills .lbl {
+    position: absolute; left: 0; top: 0; transform: translate(-50%, -100%);
+    font-size: 12px; line-height: 1.2; white-space: nowrap; pointer-events: none;
+    color: var(--ink); text-shadow: 0 0 4px var(--bg), 0 0 8px var(--bg);
+    padding-bottom: 6px;
+  }
+  .terrain3d-kimukei-skills .lbl .n { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-2); font-size: 11px; margin-left: 4px; }
+  .terrain3d-kimukei-skills .lbl.lm { font-weight: 500; font-size: 13px; }
+  .terrain3d-kimukei-skills .lbl.lm::before { content: "★ "; color: var(--past); font-size: 10px; }
+  .terrain3d-kimukei-skills .lbl.minor { color: var(--ink-2); font-size: 11px; }
+  .terrain3d-kimukei-skills .lbl.hidden { display: none; }
+
+  .terrain3d-kimukei-skills .tip {
+    position: absolute; pointer-events: none; font-size: 12px; line-height: 1.5;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+    padding: 6px 10px; transform: translate(12px, 12px); max-width: 280px; z-index: 2;
+  }
+  .terrain3d-kimukei-skills .tip b { font-weight: 500; }
+  .terrain3d-kimukei-skills .tip .n { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-2); }
+  .terrain3d-kimukei-skills .tip[hidden] { display: none; }
+
+  .terrain3d-kimukei-skills .foot {
+    position: absolute; left: 12px; right: 12px; bottom: 8px;
+    font-size: 11px; color: var(--ink-2); pointer-events: none;
+  }
+  @media (max-width: 520px) {
+    .terrain3d-kimukei-skills .ttl { font-size: 16px; }
+    .terrain3d-kimukei-skills .legend { display: none; }
+  }
+</style>
+
+<div class="terrain3d-kimukei-skills" id="terrain3d-kimukei-skills">
+  <div class="stage"></div>
+  <div class="hud">
+    <div class="card">
+      <p class="ttl">kimukei のスキル地形図</p>
+      <div class="sub"></div>
+      <div class="legend">
+        <span><i class="sw grad-cur"></i>現役(濃いほどよく歩いた)</span>
+        <span><i class="sw grad-past"></i>かつて住んだ</span>
+        <span><i class="sw" style="background:var(--untrod)"></i>未踏</span>
+        <span><i class="sw" style="background:var(--route-cur);height:3px"></i>いまのルート</span>
+        <span><i class="sw" style="background:var(--route-past);height:3px"></i>昔のルート</span>
+      </div>
+    </div>
+    <div class="card ctl">
+      <span class="grp">高さ
+        <label><input type="radio" name="terrain3d-kimukei-skills-hmode" value="loc" checked> 経験月数</label>
+        <label><input type="radio" name="terrain3d-kimukei-skills-hmode" value="visit"> 使った職場・案件数</label>
+      </span>
+      <button type="button" data-view="iso">斜め</button>
+      <button type="button" data-view="top">真上</button>
+      <button type="button" data-view="side">横から</button>
+      <label><input type="range" class="hscale" min="0" max="100" value="100"> 起伏</label>
+      <label><input type="checkbox" class="alllabels"> 全ラベル</label>
+    </div>
+  </div>
+  <div class="tip" hidden></div>
+  <div class="foot">ドラッグで回転 · ホイールで拡縮 · 山にカーソルを載せると経験月数と案件数 · 月数は職務経歴書の在籍期間から数えた(副業の重なりは両方に数える)</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  const root = document.getElementById('terrain3d-kimukei-skills');
+  if (!root || typeof THREE === 'undefined') return;
+
+  // ---- data ----
+  //   AREAS: 領域。x: 0..100(左=入口側 → 右=奥)、z: -25..25(負=メタ層の尾根、正=平野)
+  //          v: 訪問カウント、loc: ソース行数、lang: 主要言語
+  //          s: 'cur'(直近1年に歩いた) | 'past'(それより前。last に年) | 'un'(未踏)
+  //          lm: true でランドマーク(旗+常時ラベル)。why: なぜ目印か(ホバーで表示)
+  //   ROUTES: 歩いた経路。era: 'cur' | 'past'、pts: AREAS の id 列
+  const DATA = {"stage": "2018-04〜2026-10 · 8 年 6 か月", "measuredOn": "2026-10-18", "areas": [{"id": "vue", "name": "Vue.js / Nuxt.js", "x": 8, "z": 12, "v": 3, "loc": 56, "lang": "フロントエンド", "s": "past", "last": 2021, "lm": true, "why": "LIFULL・NoSchool・LIRIS の 3 か所で使った。Vuetify_meetup で登壇"}, {"id": "react", "name": "React / Next.js", "x": 10, "z": -2, "v": 2, "loc": 38, "lang": "フロントエンド", "s": "cur"}, {"id": "vite", "name": "Vite + TanStack Router", "x": 20, "z": -8, "v": 1, "loc": 25, "lang": "フロントエンド", "s": "cur", "lm": true, "why": "Next.js Pages Router からの段階的な移行を設計した"}, {"id": "ts", "name": "TypeScript", "x": 22, "z": 6, "v": 4, "loc": 79, "lang": "言語", "s": "cur", "lm": true, "why": "2018 年から 4 か所で使い続けている、いちばん長い言語"}, {"id": "mono", "name": "pnpm workspace / Turborepo", "x": 32, "z": -12, "v": 1, "loc": 25, "lang": "ビルド", "s": "cur"}, {"id": "e2e", "name": "E2E テスト(Selenium・Cypress・Playwright)", "x": 30, "z": 18, "v": 3, "loc": 68, "lang": "テスト", "s": "cur"}, {"id": "vrt", "name": "VRT(Playwright + reg-cli)", "x": 38, "z": 12, "v": 1, "loc": 25, "lang": "テスト", "s": "cur", "lm": true, "why": "Chromatic から内製へ移行し、1000 枚超を約 5 分で撮る基盤にした"}, {"id": "unit", "name": "Vitest / Jest", "x": 30, "z": 4, "v": 1, "loc": 25, "lang": "テスト", "s": "cur"}, {"id": "lint", "name": "oxlint / ESLint カスタムルール", "x": 40, "z": -20, "v": 1, "loc": 25, "lang": "DX", "s": "cur"}, {"id": "rails", "name": "Ruby on Rails", "x": 52, "z": 16, "v": 1, "loc": 28, "lang": "バックエンド", "s": "past", "last": 2020}, {"id": "php", "name": "PHP(CakePHP・Laravel)", "x": 55, "z": 6, "v": 2, "loc": 38, "lang": "バックエンド", "s": "past", "last": 2022}, {"id": "event", "name": "非同期・イベント駆動(SNS/SQS)", "x": 64, "z": 12, "v": 1, "loc": 25, "lang": "設計", "s": "past", "last": 2022, "lm": true, "why": "BASE の顧客管理システムを SNS/SQS で非同期化した"}, {"id": "kotlin", "name": "Kotlin / Spring Boot", "x": 60, "z": -4, "v": 2, "loc": 19, "lang": "バックエンド", "s": "past", "last": 2024}, {"id": "nest", "name": "NestJS / Express", "x": 48, "z": -2, "v": 1, "loc": 13, "lang": "バックエンド", "s": "past", "last": 2023}, {"id": "gql", "name": "GraphQL / Apollo", "x": 52, "z": -10, "v": 2, "loc": 19, "lang": "API", "s": "past", "last": 2024}, {"id": "pg", "name": "PostgreSQL", "x": 74, "z": -2, "v": 2, "loc": 19, "lang": "データ", "s": "past", "last": 2024}, {"id": "search", "name": "OpenSearch", "x": 76, "z": 14, "v": 1, "loc": 25, "lang": "データ", "s": "past", "last": 2022}, {"id": "aws", "name": "AWS", "x": 88, "z": 6, "v": 5, "loc": 85, "lang": "インフラ", "s": "past", "last": 2024, "lm": true, "why": "5 つの職場・期間で使った。SAA を取得"}, {"id": "docker", "name": "Docker", "x": 92, "z": 18, "v": 1, "loc": 28, "lang": "インフラ", "s": "past", "last": 2020}, {"id": "auth0", "name": "Auth0", "x": 84, "z": -8, "v": 1, "loc": 13, "lang": "認証", "s": "past", "last": 2023}, {"id": "gha", "name": "GitHub Actions", "x": 60, "z": -22, "v": 3, "loc": 44, "lang": "CI/CD", "s": "cur", "lm": true, "why": "ARM ランナー移行・動的シャーディングなどで CI の費用を月数十万円規模で削った"}, {"id": "dd", "name": "Datadog", "x": 76, "z": -20, "v": 1, "loc": 25, "lang": "監視", "s": "cur"}, {"id": "ff", "name": "LaunchDarkly", "x": 68, "z": -14, "v": 1, "loc": 25, "lang": "リリース", "s": "cur"}, {"id": "ai", "name": "AI エージェント基盤(Claude Code Skills・MCP)", "x": 20, "z": -22, "v": 2, "loc": 16, "lang": "AI", "s": "cur", "lm": true, "why": "2025-07 から。スキル 10 本以上、MCP サーバー、自動修正エージェント"}, {"id": "adr", "name": "ADR・技術戦略", "x": 88, "z": -22, "v": 2, "loc": 31, "lang": "意思決定", "s": "cur"}], "routes": [{"era": "past", "label": "LIFULL 2018-04〜2020-07", "pts": ["rails", "ts", "vue", "e2e", "docker", "aws"]}, {"era": "past", "label": "NoSchool・LIRIS 2019-04〜2021-02(副業)", "pts": ["php", "vue", "e2e"]}, {"era": "past", "label": "BASE 2020-08〜2022-08", "pts": ["php", "event", "search", "aws"]}, {"era": "past", "label": "エス・エム・エス 2022-09〜2024-09", "pts": ["react", "nest", "gql", "kotlin", "pg", "auth0", "aws"]}, {"era": "cur", "label": "エス・エム・エス 開発推進 2024-10〜", "pts": ["ai", "vite", "mono", "lint", "gha", "ff", "dd", "adr"]}], "defaultHeight": "loc", "visitLabel": "使った職場・案件数", "locSub": "実務で使った月数", "locUnit": "か月", "colorLabel": "使った職場・案件の数"};
+  const AREAS = DATA.areas, ROUTES = DATA.routes;
+  const byId = Object.fromEntries(AREAS.map(a => [a.id, a]));
+  const VMAX = Math.log10(Math.max(1, ...AREAS.map(a => a.v)) + 1);
+  const LOC_MAX = Math.max(1, ...AREAS.map(a => a.loc));
+  const V_MAX = Math.max(1, ...AREAS.map(a => a.v));
+  const VLABEL = DATA.visitLabel || '訪問回数';
+  let hMode = DATA.defaultHeight || 'loc';
+  const sub = root.querySelector('.sub');
+  function applyMode() {
+    AREAS.forEach(a => {
+      // 最大の領域が 13。対数だと 10 倍差が 1.3 倍に潰れるので平方根
+      if (hMode === 'loc') {
+        a.H = 13 * Math.sqrt(a.loc / LOC_MAX);
+        a.sig = 2.3 + 0.7 * Math.log10(a.loc + 1);
+      } else {
+        a.H = 13 * Math.sqrt(a.v / V_MAX);
+        a.sig = 2.3 + 0.8 * Math.log10(a.v + 1);
+      }
+      a.f = Math.min(1, Math.log10(a.v + 1) / VMAX);   // 歩いた濃さ 0..1
+    });
+    sub.textContent = hMode === 'loc'
+      ? `${DATA.stage} · 高さ = ${DATA.locSub}(平方根) · 色 = ${DATA.colorLabel} · ${DATA.measuredOn} 計測`
+      : `${DATA.stage} · 高さ = ${VLABEL}(平方根) · 色 = ${DATA.colorLabel} · ${DATA.measuredOn} 計測`;
+  }
+
+  // ---- theme tokens ----
+  function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function tokens() {
+    return {
+      plain: new THREE.Color(css('--plain')), cur: new THREE.Color(css('--cur')), past: new THREE.Color(css('--past')),
+      un: new THREE.Color(css('--untrod')), routeCur: new THREE.Color(css('--route-cur')),
+      routePast: new THREE.Color(css('--route-past')), ink: new THREE.Color(css('--ink')),
+    };
+  }
+  let T = tokens();
+  const mixC = new THREE.Color();
+  function areaColor(a) {
+    const era = a.s === 'cur' ? T.cur : a.s === 'past' ? T.past : T.un;
+    return mixC.copy(T.un).lerp(era, Math.pow(a.f, 0.8));
+  }
+
+  // ---- height field ----
+  let hScale = 1;
+  function heightAt(x, z) {
+    let h = 0;
+    for (const a of AREAS) {
+      const dx = x - a.x, dz = z - a.z;
+      h += a.H * Math.exp(-(dx * dx + dz * dz) / (2 * a.sig * a.sig));
+    }
+    return h * hScale;
+  }
+  function colorAt(x, z, h, out) {
+    let r = T.plain.r * 0.15, g = T.plain.g * 0.15, b = T.plain.b * 0.15, w = 0.15;
+    for (const a of AREAS) {
+      const dx = x - a.x, dz = z - a.z;
+      const k = Math.exp(-(dx * dx + dz * dz) / (2 * a.sig * a.sig)) * (0.6 + a.H / 8);
+      r += a.c.r * k; g += a.c.g * k; b += a.c.b * k; w += k;
+    }
+    r /= w; g /= w; b /= w;
+    const band = Math.floor(h / 1.6) % 2 === 0 ? 1 : 0.93;   // 等高線バンド
+    out.setRGB(r * band, g * band, b * band);
+  }
+
+  // ---- scene ----
+  const stage = root.querySelector('.stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  stage.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 1000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x555555, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+  sun.position.set(-40, 80, 30);
+  scene.add(sun);
+
+  const W = 100, D = 50, NX = 200, NZ = 100;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array((NX + 1) * (NZ + 1) * 3);
+  const col = new Float32Array((NX + 1) * (NZ + 1) * 3);
+  const idx = [];
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+    const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1;
+    idx.push(a, c, b, b, c, d);
+  }
+  geo.setIndex(idx);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const tmpC = new THREE.Color();
+  function rebuildTerrain() {
+    AREAS.forEach(a => { a.c = areaColor(a).clone(); });
+    let p = 0;
+    for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) {
+      const x = (i / NX) * W, z = (j / NZ) * D - D / 2;
+      const h = heightAt(x, z);
+      pos[p] = x; pos[p + 1] = h; pos[p + 2] = z;
+      colorAt(x, z, h, tmpC);
+      col[p] = tmpC.r; col[p + 1] = tmpC.g; col[p + 2] = tmpC.b;
+      p += 3;
+    }
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+  const terrain = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  scene.add(terrain);
+  const frame = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, -D / 2), new THREE.Vector3(W, 0, -D / 2),
+      new THREE.Vector3(W, 0, D / 2), new THREE.Vector3(0, 0, D / 2)]),
+    new THREE.LineBasicMaterial({ color: T.ink, transparent: true, opacity: 0.25 }));
+  scene.add(frame);
+
+  // ---- routes ----
+  const routeGroup = new THREE.Group();
+  scene.add(routeGroup);
+  function rebuildRoutes() {
+    while (routeGroup.children.length) {
+      const m = routeGroup.children.pop();
+      m.geometry.dispose(); m.material.dispose();
+    }
+    ROUTES.forEach((r, ri) => {
+      const pts = r.pts.filter(id => byId[id]);
+      if (pts.length < 2) return;
+      const off = ((ri % 3) - 1) * 0.9;
+      const base = pts.map(id => new THREE.Vector3(byId[id].x + off, 0, byId[id].z + off));
+      const flat = new THREE.CatmullRomCurve3(base, false, 'catmullrom', 0.6);
+      const n = 24 * (base.length - 1);
+      const lifted = [];
+      for (let i = 0; i <= n; i++) {
+        const q = flat.getPoint(i / n);
+        lifted.push(new THREE.Vector3(q.x, heightAt(q.x, q.z) + 0.45, q.z));
+      }
+      const isCur = r.era === 'cur';
+      const tube = new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lifted), n, isCur ? 0.28 : 0.2, 6, false),
+        new THREE.MeshLambertMaterial({ color: isCur ? T.routeCur : T.routePast }));
+      tube.userData.route = r;
+      routeGroup.add(tube);
+    });
+  }
+
+  // ---- landmarks + labels ----
+  const lmGroup = new THREE.Group();
+  scene.add(lmGroup);
+  const labels = [];
+  AREAS.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'lbl ' + (a.lm ? 'lm' : 'minor');
+    el.innerHTML = `${a.name}<span class="n"></span>`;
+    root.appendChild(el);
+    labels.push({ a, el, n: el.querySelector('.n') });
+    if (a.lm) {
+      a.pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1, 6), new THREE.MeshBasicMaterial({ color: T.ink }));
+      a.flag = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.0, 4), new THREE.MeshBasicMaterial({ color: T.past }));
+      lmGroup.add(a.pole, a.flag);
+    }
+  });
+  function fmt(n) { return n >= 10000 ? (n / 1000).toFixed(0) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+  let labelOrder = labels;   // ラベル配置の優先順: ランドマーク → 高い順
+  function placeLandmarks() {
+    labels.forEach(({ a, n }) => { n.textContent = hMode === 'loc' ? fmt(a.loc) + DATA.locUnit : String(a.v); });
+    labelOrder = labels.slice().sort((p, q) => ((q.a.lm ? 1 : 0) - (p.a.lm ? 1 : 0)) || (q.a.H - p.a.H));
+    AREAS.forEach(a => {
+      if (!a.pole) return;
+      const h = heightAt(a.x, a.z);
+      a.pole.scale.y = 3;
+      a.pole.position.set(a.x, h + 1.5, a.z);
+      a.flag.position.set(a.x, h + 3.4, a.z);
+    });
+  }
+
+  // ---- camera / orbit ----
+  const target = new THREE.Vector3(W / 2, 3, 0);
+  const VIEWS = { iso: [125, -0.35, 0.72], top: [130, 0, 0.06], side: [140, Math.PI / 2, 1.25] };
+  const sph = { r: 125, theta: -0.35, phi: 0.72 };
+  const view = { r: 125, theta: -0.35, phi: 0.72 };
+  function applyCamera() {
+    const { r, theta, phi } = view;
+    camera.position.set(
+      target.x + r * Math.sin(phi) * Math.sin(theta),
+      target.y + r * Math.cos(phi),
+      target.z + r * Math.sin(phi) * Math.cos(theta));
+    camera.lookAt(target);
+  }
+  let cw = 1, ch = 1;
+  function local(e) { const b = stage.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+  const canvas = renderer.domElement;
+  let drag = null, autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  canvas.addEventListener('pointerdown', e => {
+    drag = { x: e.clientX, y: e.clientY }; autoRotate = false;
+    canvas.classList.add('dragging'); canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointerup', () => { drag = null; canvas.classList.remove('dragging'); });
+  canvas.addEventListener('pointermove', e => {
+    if (drag) {
+      sph.theta -= (e.clientX - drag.x) * 0.006;
+      sph.phi = Math.min(1.45, Math.max(0.05, sph.phi + (e.clientY - drag.y) * 0.005));
+      drag = { x: e.clientX, y: e.clientY };
+    } else hover(e);
+  });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    sph.r = Math.min(260, Math.max(40, sph.r * (1 + Math.sign(e.deltaY) * 0.08)));
+  }, { passive: false });
+  canvas.addEventListener('pointerleave', () => { tip.hidden = true; });
+  root.querySelectorAll('button[data-view]').forEach(b => b.addEventListener('click', () => {
+    const [r, theta, phi] = VIEWS[b.dataset.view];
+    autoRotate = false; sph.r = r; sph.theta = theta; sph.phi = phi;
+  }));
+
+  // ---- hover ----
+  const tip = root.querySelector('.tip');
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  function hover(e) {
+    const p = local(e);
+    ndc.set((p.x / cw) * 2 - 1, -(p.y / ch) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const rt = ray.intersectObjects(routeGroup.children, false)[0];
+    if (rt) {
+      const r = rt.object.userData.route;
+      tip.innerHTML = `<b>${r.label}</b><br><span class="n">${r.pts.map(id => (byId[id] || { name: id }).name).join(' → ')}</span>`;
+      show(p); return;
+    }
+    const hit = ray.intersectObject(terrain, false)[0];
+    if (!hit) { tip.hidden = true; return; }
+    let best = null, bd = Infinity;
+    for (const a of AREAS) {
+      const d = Math.hypot(hit.point.x - a.x, hit.point.z - a.z);
+      if (d < a.sig * 1.6 && d < bd) { bd = d; best = a; }
+    }
+    if (!best) { tip.hidden = true; return; }
+    const st = best.s === 'cur' ? '現役' : best.s === 'past' ? `かつて(最終 ${best.last || '?'})` : '未踏';
+    tip.innerHTML = `<b>${best.name}</b><br><span class="n">${best.loc.toLocaleString()} ${DATA.locUnit} (${best.lang || ''}) · ${VLABEL} ${best.v}</span><br>${st}${best.why ? '<br>' + best.why : ''}`;
+    show(p);
+  }
+  function show(p) { tip.hidden = false; tip.style.left = p.x + 'px'; tip.style.top = p.y + 'px'; }
+
+  // ---- controls ----
+  root.querySelector('.hscale').addEventListener('input', e => { hScale = e.target.value / 100; rebuildAll(); });
+  root.querySelector('.alllabels').addEventListener('change', e => { root.classList.toggle('all-labels', e.target.checked); });
+  root.querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener('change', e => { hMode = e.target.value; rebuildAll(); }));
+
+  function rebuildAll() { applyMode(); rebuildTerrain(); rebuildRoutes(); placeLandmarks(); }
+  function retheme() {
+    T = tokens();
+    frame.material.color.copy(T.ink);
+    AREAS.forEach(a => { if (a.pole) { a.pole.material.color.copy(T.ink); a.flag.material.color.copy(T.past); } });
+    rebuildAll();
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---- resize / loop ----
+  function resize() {
+    const b = stage.getBoundingClientRect();
+    cw = Math.max(1, b.width); ch = Math.max(1, b.height);
+    renderer.setSize(cw, ch, false);
+    camera.aspect = cw / ch;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  rebuildAll();
+
+  const v3 = new THREE.Vector3();
+  function frameLoop() {
+    if (autoRotate) sph.theta += 0.0015;
+    view.r += (sph.r - view.r) * 0.12;
+    view.theta += (sph.theta - view.theta) * 0.12;
+    view.phi += (sph.phi - view.phi) * 0.12;
+    applyCamera();
+    renderer.render(scene, camera);
+    // ラベル配置。重なる場合は優先順の低い方を 1 行ずつ上に積み、3 行積んでも重なるなら非ランドマークは隠す
+    const placed = [];
+    const overlaps = r => placed.some(p => r.l < p.r && r.r > p.l && r.t < p.b && r.b > p.t);
+    for (const { a, el } of labelOrder) {
+      if (!a.lm && !root.classList.contains('all-labels')) { el.classList.add('hidden'); continue; }
+      v3.set(a.x, heightAt(a.x, a.z) + (a.lm ? 4.2 : 0.8), a.z).project(camera);
+      if (v3.z > 1) { el.classList.add('hidden'); continue; }
+      el.classList.remove('hidden');
+      const x = (v3.x + 1) / 2 * cw, y0 = (1 - v3.y) / 2 * ch;
+      const w = el.offsetWidth || 80, h = el.offsetHeight || 16;
+      let y = y0, rect = null;
+      for (let step = 0; step <= 3; step++) {
+        y = y0 - step * h;
+        rect = { l: x - w / 2, r: x + w / 2, t: y - h, b: y };
+        if (!overlaps(rect)) break;
+        rect = null;
+      }
+      if (!rect) {
+        if (!a.lm) { el.classList.add('hidden'); continue; }
+        y = y0; rect = { l: x - w / 2, r: x + w / 2, t: y - h, b: y };
+      }
+      placed.push(rect);
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, -100%)`;
+    }
+    requestAnimationFrame(frameLoop);
+  }
+  frameLoop();
+})();
+</script>

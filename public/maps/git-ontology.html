@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  input-ontology-map skill の共通描画テンプレート。build.mjs が TITLE と DATA_JSON のプレースホルダ（二重波括弧）を差し込む。
+  書き直さないこと。過去に再発したバグとその対策:
+  - このコメント内にプレースホルダの文字列をそのまま書かない。String.replace が先頭一致でコメント側を置換し、<title> と data script が未置換のまま出た（JSON.parse が position 1 で失敗）
+  - Action ノードは ctx を持たない。幅計算・ラベル描画は n.isAction を先に見る（ctxName(undefined) で例外になり描画全体が止まった）
+  - ドラッグ用の setPointerCapture を SVG にかけると click の宛先が SVG になり、ノードの click ハンドラが呼ばれない。
+    選択は pointerup で pointerdown 時の target を closest('.node' / '.edge') して判定する
+  - ctx の色は CSS 変数 --ctx-<id> / --ctx-<id>-b で引く。既定名以外の ctx id は assignCtxColors がパレットから自動付与する（未定義だと箱が透明になった）
+  - 当たり判定用 path.hit は `.edge path.hit{stroke:transparent!important}` で明示的に打ち消す（カテゴリ色の指定に負けて太線になった）
+-->
+<meta charset="utf-8">
+<title>Git 概念図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F8; --surface:#FFFFFF; --surface-2:#EBEDF2; --ink:#1B1F2A; --muted:#5D6375; --line:#D6DAE3; --line-strong:#B9BFCC;
+  --accent:#3B4C7A; --accent-ink:#FFFFFF; --focus:#3B6FD1;
+  --ctx-curriculum:#E3E8F6; --ctx-curriculum-b:#7A8BBE;
+  --ctx-planning:#FBE6DA; --ctx-planning-b:#C98868;
+  --ctx-learning:#DFF0E7; --ctx-learning-b:#6FA88A;
+  --ctx-content:#F0E4F4; --ctx-content-b:#A784B5;
+  --ctx-organization:#FAF0D3; --ctx-organization-b:#C4A85A;
+  --ctx-notification:#E2EEF4; --ctx-notification-b:#7AA2B8;
+  --ctx-identity:#E9E9EC; --ctx-identity-b:#9296A3;
+  --ctx-external:#F4F5F8; --ctx-external-b:#A6ABB8;
+  --ctx-action:#FFF7E0; --ctx-action-b:#B58A1E;
+  --cat-is-a:#7B61B8; --cat-part-of:#2C8C7A; --cat-depends-on:#3B6FD1; --cat-produces:#3F9A4B; --cat-constrains:#D0532B; --cat-relates-to:#7F8592;
+  --ok:#2F8A4C; --warn:#B8791C; --ng:#B94A3A;
+  --shadow:0 1px 2px rgba(20,24,36,.06),0 6px 20px rgba(20,24,36,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+    --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+    --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+    --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+    --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+    --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+    --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+    --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+    --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+    --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+    --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+    --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+    --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+  --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+  --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+  --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+  --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+  --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+  --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+  --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+  --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+  --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+  --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+  --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+  --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.55;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em}
+header{display:flex;align-items:baseline;gap:20px;padding:12px 20px 10px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+header h1{font-family:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;font-weight:600;font-size:21px;letter-spacing:.02em;margin:0;text-wrap:balance}
+header .sub{color:var(--muted);font-size:13px}
+header .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+header .meta .tag{border:1px solid var(--line);border-radius:3px;padding:1px 7px;font-family:"IBM Plex Mono",monospace;font-size:11px}
+main{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;min-width:0;background:var(--paper)}
+#stage svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#stage svg.dragging{cursor:grabbing}
+.grid{stroke:var(--line);stroke-opacity:.55}
+.node rect.body{stroke-width:1.2;rx:5;ry:5;transition:opacity .15s}
+.node text{pointer-events:none}
+.node .eyebrow{font-size:9.5px;letter-spacing:.08em;fill:var(--muted);font-weight:500}
+.node .name{font-size:13.5px;font-weight:700;fill:var(--ink)}
+.node .code{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.node{cursor:pointer}
+.node.dim{opacity:.22}
+.node.selected rect.body{stroke-width:2.4;filter:drop-shadow(0 0 0 transparent)}
+.node.external rect.body{stroke-dasharray:4 3}
+.node.action rect.body{rx:16;ry:16;stroke-dasharray:2 2.5}
+.edge path{fill:none;stroke-width:1.5;transition:opacity .15s}
+.edge.cat-is-a path{stroke:var(--cat-is-a)}
+.edge.cat-part-of path{stroke:var(--cat-part-of)}
+.edge.cat-depends-on path{stroke:var(--cat-depends-on)}
+.edge.cat-produces path{stroke:var(--cat-produces)}
+.edge.cat-constrains path{stroke:var(--cat-constrains)}
+.edge.cat-relates-to path{stroke:var(--cat-relates-to);stroke-dasharray:3 3}
+.edge.action-link path{stroke:var(--ctx-action-b);stroke-dasharray:1.5 3;stroke-width:1.3}
+.edge path.hit{stroke:transparent!important;stroke-width:10;stroke-dasharray:none!important;cursor:pointer}
+.edge .lbl rect{fill:var(--paper);stroke:none;rx:3;ry:3;fill-opacity:.92}
+.edge .lbl text{font-size:10.5px;font-weight:500;paint-order:stroke}
+.edge.cat-is-a .lbl text{fill:var(--cat-is-a)}
+.edge.cat-part-of .lbl text{fill:var(--cat-part-of)}
+.edge.cat-depends-on .lbl text{fill:var(--cat-depends-on)}
+.edge.cat-produces .lbl text{fill:var(--cat-produces)}
+.edge.cat-constrains .lbl text{fill:var(--cat-constrains)}
+.edge.cat-relates-to .lbl text{fill:var(--cat-relates-to)}
+.edge.action-link .lbl text{fill:var(--ctx-action-b)}
+.edge .lbl{cursor:pointer}
+.edge.dim{opacity:.1}
+.edge.hidden,.node.hidden{display:none}
+.edge.selected path.vis{stroke-width:2.6}
+/* overlays */
+.panel-float{position:absolute;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px}
+#legend{left:14px;bottom:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;max-width:300px}
+#legend .h{font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;font-weight:500;margin-bottom:2px}
+#legend .cats{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+#legend label{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:2px 0}
+#legend label input{margin:0;accent-color:var(--accent)}
+#legend .sw{width:22px;height:0;border-top:2px solid;flex:none;position:relative}
+#legend .sw.dotted{border-top-style:dashed}
+#legend .sw::after{content:"";position:absolute;right:-1px;top:-4px;border:3px solid transparent;border-left:5px solid currentColor}
+#legend .cat-name{color:var(--ink)}
+#legend .cat-desc{color:var(--muted);font-size:10.5px}
+#legend .ctxs{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:2px}
+#legend .ctx{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
+#legend .ctx i{width:11px;height:11px;border-radius:2px;border:1px solid;display:inline-block}
+#legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#zoom{right:14px;top:14px;display:flex;flex-direction:column}
+#zoom button{width:32px;height:30px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;cursor:pointer;font-family:inherit}
+#zoom button:last-child{border-bottom:0}
+#zoom button:hover{background:var(--surface-2)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* detail panel */
+aside{width:400px;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+aside .tabs{display:flex;border-bottom:1px solid var(--line)}
+aside .tabs button{flex:1;padding:10px 6px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+aside .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+aside .body{overflow:auto;padding:16px 18px 24px;flex:1}
+aside h2{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:19px;margin:0 0 2px;line-height:1.3;text-wrap:balance}
+aside h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:500}
+aside p{margin:6px 0}
+.ctx-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px}
+.ctx-chip i{width:10px;height:10px;border-radius:2px;border:1px solid;display:inline-block}
+.aliases{display:flex;flex-wrap:wrap;gap:5px}
+.aliases span{background:var(--surface-2);border-radius:3px;padding:1px 7px;font-size:11.5px}
+.aliases span.code{font-family:"IBM Plex Mono",monospace;font-size:11px}
+ul.plain{margin:0;padding-left:18px}
+ul.plain li{margin:3px 0}
+li.inf{color:var(--muted)}
+li.inf::after{content:" 推定";font-size:10px;border:1px solid var(--line-strong);border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:middle}
+.rel{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+.rel:last-child{border-bottom:0}
+.rel .dir{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted)}
+.rel .pred{font-weight:700}
+.rel .cat{font-family:"IBM Plex Mono",monospace;font-size:10.5px;border-radius:3px;padding:0 5px;color:var(--paper);margin-left:6px;vertical-align:middle}
+.rel .other{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.rel .other:hover{color:var(--accent)}
+.rel .src{grid-column:2;font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;word-break:break-all}
+.src-list{margin:0;padding-left:0;list-style:none}
+.src-list li{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin:3px 0;word-break:break-all}
+.note{background:var(--surface-2);border-radius:4px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.q{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:0 0 12px}
+.q .qt{font-weight:700;font-size:14px;margin:0 0 6px;text-wrap:balance}
+.q .ans{font-size:12.5px}
+.q .verdict{display:inline-block;font-size:11px;border-radius:3px;padding:1px 7px;margin-bottom:6px;color:#fff}
+.q .verdict.yes{background:var(--ok)}.q .verdict.partial{background:var(--warn)}.q .verdict.no{background:var(--ng)}
+.q .path{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.q .path button{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;font-family:inherit;font-size:11.5px;padding:1px 7px;cursor:pointer}
+.q .path button:hover{background:var(--surface-2)}
+.hint{color:var(--muted);font-size:12px}
+.action-card{border:1px dashed var(--ctx-action-b);border-radius:6px;padding:10px 12px;margin:0 0 10px;cursor:pointer}
+.action-card:hover{background:var(--surface-2)}
+.action-card b{display:block}
+.action-card .st{font-size:11px;color:var(--muted)}
+.pol{border-left:3px solid var(--ctx-action-b);padding:6px 10px;background:var(--surface-2);border-radius:0 4px 4px 0;margin:6px 0}
+.pol .who{font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+@media (max-width:900px){main{flex-direction:column}aside{width:auto;height:45%;border-left:0;border-top:1px solid var(--line)}#legend{max-width:240px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <h1 id="title"></h1>
+  <span class="sub" id="subtitle"></span>
+  <div class="meta">
+    <span>抽出日 <span class="tag" id="date"></span></span>
+    <span id="counts"></span>
+  </div>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="概念マップ"></svg>
+    <div id="legend" class="panel-float">
+      <div class="h">関係カテゴリ（クリックで表示切替）</div>
+      <div class="cats" id="cats"></div>
+      <hr>
+      <div class="h">コンテキスト</div>
+      <div class="ctxs" id="ctxs"></div>
+      <div id="actionToggle" hidden><hr><label><input type="checkbox" id="showActions"> <span class="cat-name">Action / Policy を重ねる</span></label></div>
+    </div>
+    <div id="zoom" class="panel-float">
+      <button id="zin" title="拡大" aria-label="拡大">＋</button>
+      <button id="zout" title="縮小" aria-label="縮小">－</button>
+      <button id="zfit" title="全体表示" aria-label="全体表示">⊡</button>
+    </div>
+  </div>
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="questions">問い</button>
+      <button role="tab" aria-selected="false" data-tab="detail">詳細</button>
+      <button role="tab" aria-selected="false" data-tab="sources">ソース</button>
+    </div>
+    <div class="body" id="body"></div>
+  </aside>
+</main>
+
+<script id="data" type="application/json">{"title":"Git 概念図","subtitle":"作業ツリー・index・オブジェクト・ref と、add / commit / reset / switch が書き換えるもの","extractedAt":"2026-10-18","repoRoot":"git 2.50.1 のマニュアル(man ページ)","contexts":{"work":{"name":"作業場所"},"store":{"name":"オブジェクト"},"refs":{"name":"参照"}},"sources":[{"label":"用語集","path":"gitglossary(7)"},{"label":"reset の 3 モードと状態表","path":"git-reset(1)(DESCRIPTION, DISCUSSION)"},{"label":"--staged と --cached","path":"git-diff(1)"},{"label":"index の役割","path":"git-add(1)(DESCRIPTION)"},{"label":"staging area という呼び方","path":"git-commit(1)(DISCUSSION)"},{"label":"detached HEAD への切り替え","path":"git-switch(1)"}],"identityNotes":["「index」「staging area」「cache」は同じもの。用語集は cache を「index の旧称」とし、git-commit(1) は「staging area called the index」と書く。git diff の --staged は --cached の別名","「head」と「head ref」は同義(用語集)。この図では「ブランチヘッド」と呼ぶ","「HEAD」(大文字)と「head」(小文字)は別物。HEAD は現在のブランチヘッドを指す symref で、head はブランチ先端を指す ref","用語集の「branch」は開発の系列を指し、その先端を指す ref が head。図では ref としてのブランチヘッドに寄せ、系列はコミットの parent で表した(推定による整理)","「upstream branch」は独立した物ではなく、ブランチヘッドと remote-tracking branch の間の設定(branch.<name>.merge)なので、エッジの述語にした"],"scopeNote":"pack ファイル・merge の多段 index・submodule・worktree コマンド・hooks は含めない。reset は --merge と --keep を外し、--soft / --mixed / --hard の 3 モードだけを Action にした。","questions":[{"q":"git reset --soft / --mixed / --hard は、それぞれ何を書き換えるか","answerable":"yes","answer":["3 モードとも、現在のブランチヘッドを指定コミットへ動かす。動かす前の先端は ORIG_HEAD に残る。","--soft はそこで止まり、index と作業ツリーに触れない。--mixed(既定)は index も指定コミットの tree に戻す。--hard は index と作業ツリーの両方を戻し、追跡中ファイルの変更を捨てる(git-reset(1) の状態表)。"],"path":["head","origHead","index","workingTree"]},{"q":"index・staging area・cache は同じものか","answerable":"yes","answer":["同じもの。正式名は index で、cache は旧称、staging area は「次のコミットの内容を置く場所」という役割からの呼び名。","index は作業ツリーの保存版で、中身は blob として保存される。commit は index の状態から新しいコミットを作る。"],"path":["workingTree","index","blob","commit"]},{"q":"detached HEAD でコミットすると、ブランチはどうなるか","answerable":"yes","answer":["通常の HEAD はブランチヘッドの名前を持つ symref だが、detached HEAD はコミットを直接指す。","この状態でも commit はできる。新しいコミットに HEAD が進むだけで、どのブランチヘッドも動かない(gitglossary の detached HEAD)。"],"path":["detached","HEAD","commit","head"]}],"nodes":[{"id":"workingTree","ctx":"work","name":"作業ツリー","code":"working tree","x":40,"y":150,"def":"チェックアウトされた実ファイルの木。通常は HEAD のコミットの tree に、未コミットの変更を足したもの。","aliases":["working directory(git-stash などの表記)"],"props":["dirty: 現在のブランチにコミットしていない変更がある状態"],"sources":["gitglossary(7)"]},{"id":"index","ctx":"work","name":"index","code":"index","x":40,"y":370,"def":"作業ツリーの保存版。次のコミットの内容になるスナップショット。","aliases":["staging area(git-commit(1), git-diff(1))","cache(旧称。gitglossary)","--cached / --staged(git diff のオプション名)"],"props":["index entry: ファイルごとの stat 情報とオブジェクト名","merge 中は 1 ファイルに複数の版を持つ"],"sources":["gitglossary(7)","git-add(1)","git-commit(1)","git-diff(1)"]},{"id":"object","ctx":"store","name":"オブジェクト","code":"object","x":600,"y":370,"def":"Git の保存単位。中身の SHA-1 で一意に識別され、変更できない。","aliases":["object name(識別子)","SHA-1(俗称)","oid"],"constraints":["中身が変われば別のオブジェクトになる"],"sources":["gitglossary(7)"]},{"id":"objectDb","ctx":"store","name":"オブジェクトデータベース","code":"object database","x":600,"y":590,"def":"オブジェクトをオブジェクト名で引けるように保存する場所。通常は $GIT_DIR/objects/。","sources":["gitglossary(7)"]},{"id":"commit","ctx":"store","name":"コミット","code":"commit object","x":320,"y":260,"def":"履歴上の 1 点。親、作者、コミッター、日付、トップディレクトリの tree を持つ。","aliases":["revision / version(他の VCS での呼び名)"],"props":["parent: 直前のコミットのリスト(空もありうる)","author / committer / date"],"sources":["gitglossary(7)"]},{"id":"tree","ctx":"store","name":"tree","code":"tree object","x":320,"y":370,"def":"ファイル名とモードの一覧で、各項目が blob か tree を指す。ディレクトリに相当する。","sources":["gitglossary(7)"]},{"id":"blob","ctx":"store","name":"blob","code":"blob object","x":320,"y":480,"def":"型を持たないオブジェクト。ファイルの中身。","sources":["gitglossary(7)"]},{"id":"tagObject","ctx":"store","name":"タグオブジェクト","code":"tag object","x":600,"y":480,"def":"別のオブジェクトを指す ref とメッセージを持つオブジェクト。署名付きのものは signed tag object。","sources":["gitglossary(7)"]},{"id":"repository","ctx":"store","name":"リポジトリ","code":"repository","x":600,"y":40,"def":"ref の集まりと、そこから到達できるオブジェクトを持つオブジェクトデータベースの組。","sources":["gitglossary(7)"]},{"id":"ref","ctx":"refs","name":"ref","code":"ref","x":880,"y":370,"def":"オブジェクト名か別の ref を指す名前。refs/ 以下に階層で置く。","props":["refs/heads/ = ローカルブランチ","refs/tags/ = タグ"],"constraints":["ルート直下の名前は大文字とアンダースコアだけで、HEAD か _HEAD で終わる"],"sources":["gitglossary(7)"]},{"id":"symref","ctx":"refs","name":"symref","code":"symbolic ref","x":880,"y":260,"def":"オブジェクト名ではなく「ref: refs/...」の形で別の ref を指す ref。参照時に再帰的にたどる。","sources":["gitglossary(7)"]},{"id":"HEAD","ctx":"refs","name":"HEAD","code":"HEAD","x":880,"y":150,"def":"現在のブランチ。通常はブランチヘッドの 1 つを指す symref。","sources":["gitglossary(7)"]},{"id":"detached","ctx":"refs","name":"detached HEAD","code":"detached HEAD","x":880,"y":40,"def":"HEAD がブランチヘッドではなく、任意のコミットを直接指している状態。","constraints":["commit はできるが、どのブランチヘッドも動かない","現在のブランチを問い合わせるコマンド(--set-upstream-to など)は動かない"],"sources":["gitglossary(7)","git-switch(1)"]},{"id":"head","ctx":"refs","name":"ブランチヘッド","code":"head","x":1160,"y":260,"def":"ブランチの先端のコミットを指す名前付きの ref。開発が進むと前へ動く。","aliases":["head ref(同義)","branch(日常の呼び方)","refs/heads/<name>"],"sources":["gitglossary(7)"]},{"id":"tag","ctx":"refs","name":"タグ","code":"tag","x":880,"y":480,"def":"refs/tags/ 以下の ref。履歴上の特定の点に印を付ける。","constraints":["commit コマンドでは動かない(ブランチヘッドとの違い)"],"sources":["gitglossary(7)"]},{"id":"remoteTracking","ctx":"refs","name":"remote-tracking branch","code":"refs/remotes/<remote>/<name>","x":1160,"y":370,"def":"別のリポジトリの変更を追うための ref。fetch の refspec の右辺に一致する。","aliases":["origin/main のような表記"],"constraints":["直接変更したり、ローカルのコミットを載せたりしない"],"sources":["gitglossary(7)"]},{"id":"origHead","ctx":"refs","name":"ORIG_HEAD","code":"ORIG_HEAD","x":1160,"y":480,"def":"reset などの直前に、現在のブランチの先端を記録しておく ref。","sources":["git-reset(1)"]},{"id":"reflog","ctx":"refs","name":"reflog","code":"reflog","x":880,"y":590,"def":"ref のローカルの履歴。「3 つ前の版」「昨日 21:14 の状態」を引ける。","sources":["gitglossary(7)"]}],"edges":[{"from":"objectDb","to":"repository","pred":"リポジトリを構成する","cat":"part-of","src":"gitglossary(7)"},{"from":"ref","to":"repository","pred":"リポジトリを構成する","cat":"part-of","src":"gitglossary(7)","bend":60},{"from":"object","to":"objectDb","pred":"格納される","cat":"part-of","src":"gitglossary(7)"},{"from":"commit","to":"object","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"tree","to":"object","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"blob","to":"object","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"tagObject","to":"object","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"commit","to":"tree","pred":"トップディレクトリを記録する","cat":"depends-on","src":"gitglossary(7)"},{"from":"blob","to":"tree","pred":"ファイルとして並ぶ","cat":"part-of","src":"gitglossary(7)"},{"from":"tagObject","to":"commit","pred":"指す","cat":"relates-to","src":"gitglossary(7)","bend":80},{"from":"symref","to":"ref","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"HEAD","to":"symref","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"head","to":"ref","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"tag","to":"ref","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"remoteTracking","to":"ref","pred":"一種","cat":"is-a","src":"gitglossary(7)"},{"from":"origHead","to":"ref","pred":"一種","cat":"is-a","src":"gitglossary(7)(ref のルート直下の命名規則)"},{"from":"ref","to":"object","pred":"オブジェクト名を指す","cat":"relates-to","src":"gitglossary(7)"},{"from":"HEAD","to":"head","pred":"現在のブランチとして指す","cat":"relates-to","src":"gitglossary(7)"},{"from":"head","to":"commit","pred":"先端のコミットを指す","cat":"relates-to","src":"gitglossary(7)","bend":-140},{"from":"head","to":"remoteTracking","pred":"上流(upstream)として統合する","cat":"relates-to","src":"gitglossary(7)(upstream branch)"},{"from":"tag","to":"tagObject","pred":"指す","cat":"relates-to","src":"gitglossary(7)"},{"from":"detached","to":"HEAD","pred":"HEAD の一状態","cat":"depends-on","src":"gitglossary(7)"},{"from":"detached","to":"commit","pred":"コミットを直接指す","cat":"relates-to","src":"gitglossary(7)","bend":-60},{"from":"origHead","to":"head","pred":"直前の先端を記録する","cat":"depends-on","src":"git-reset(1)"},{"from":"reflog","to":"ref","pred":"ref の履歴を記録する","cat":"depends-on","src":"gitglossary(7)"},{"from":"workingTree","to":"HEAD","pred":"HEAD の tree から導出される","cat":"depends-on","src":"gitglossary(7)","bend":-60},{"from":"index","to":"workingTree","pred":"作業ツリーの保存版","cat":"depends-on","src":"gitglossary(7)"},{"from":"index","to":"blob","pred":"中身をオブジェクトとして保存する","cat":"depends-on","src":"gitglossary(7)"},{"from":"commit","to":"index","pred":"index の状態から作られる","cat":"depends-on","src":"gitglossary(7)(commit の動詞の意味)"}],"actions":[{"id":"actAdd","name":"git add","code":"git add","verb":"index を更新する","x":40,"y":720,"status":"git 2.50.1","targets":["index","workingTree"],"def":"作業ツリーの現在の内容で index を更新し、次のコミットの内容を用意する。","pre":["対象のファイルが作業ツリーにある(削除の記録は -A など)"],"effects":["index の該当エントリが作業ツリーの内容になる"],"policy":null,"sources":["git-add(1)"]},{"id":"actCommit","name":"git commit","code":"git commit","verb":"コミットを作る","x":320,"y":720,"status":"git 2.50.1","targets":["index","commit","HEAD"],"def":"index の現在の状態を表す新しいコミットを作り、HEAD をそこへ進める。","pre":["index にコミットする内容がある"],"effects":["新しいコミット(親は元の HEAD)","現在のブランチヘッドが新しいコミットへ進む","detached HEAD なら HEAD だけが進む"],"policy":null,"sources":["gitglossary(7)","git-commit(1)"]},{"id":"actResetSoft","name":"git reset --soft","code":"reset --soft","verb":"ブランチヘッドだけ動かす","x":600,"y":720,"status":"git 2.50.1","targets":["head","origHead"],"def":"ブランチヘッドを指定コミットへ動かす。index と作業ツリーには触れない。","pre":[],"effects":["ORIG_HEAD = 元の先端","ブランチヘッド = 指定コミット","変更は「Changes to be committed」として残る"],"policy":null,"sources":["git-reset(1)"]},{"id":"actResetMixed","name":"git reset --mixed(既定)","code":"reset --mixed","verb":"index まで戻す","x":880,"y":720,"status":"git 2.50.1","targets":["head","origHead","index"],"def":"ブランチヘッドを動かし、index も指定コミットの tree に戻す。作業ツリーは残す。","pre":[],"effects":["ORIG_HEAD = 元の先端","ブランチヘッド = 指定コミット","index = 指定コミットの tree","変更は未ステージとして残る"],"policy":null,"sources":["git-reset(1)"]},{"id":"actResetHard","name":"git reset --hard","code":"reset --hard","verb":"作業ツリーまで戻す","x":1160,"y":720,"status":"git 2.50.1","targets":["head","origHead","index","workingTree"],"def":"ブランチヘッド、index、作業ツリーをすべて指定コミットに合わせる。","pre":[],"effects":["ORIG_HEAD = 元の先端","ブランチヘッド = 指定コミット","index と作業ツリー = 指定コミットの tree","追跡中ファイルの変更は捨てられる","書き込みの邪魔になる未追跡ファイルは削除される"],"policy":null,"sources":["git-reset(1)"]},{"id":"actDetach","name":"git switch --detach","code":"git switch --detach","verb":"HEAD を切り離す","x":1160,"y":40,"status":"git 2.50.1","targets":["detached","HEAD"],"def":"作業ツリーをどのブランチからも切り離し、指定した点をチェックアウトする。","pre":[],"effects":["HEAD がコミットを直接指す(detached HEAD)"],"policy":null,"sources":["git-switch(1)"]}]}</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const CATS = {
+  'is-a':{name:'is-a',desc:'汎化。下位は上位の一種'},
+  'part-of':{name:'part-of',desc:'構成。全体を成す部分'},
+  'depends-on':{name:'depends-on',desc:'参照・利用。相手がないと成立しない'},
+  'produces':{name:'produces',desc:'生成。相手を生み出す'},
+  'constrains':{name:'constrains',desc:'制約。値・量・状態を制限'},
+  'relates-to':{name:'relates-to',desc:'所属・担当・対象など'},
+};
+// contexts はデータ側で自由に名付ける。既定の CSS 変数（curriculum… の名前）に無い ctx id には、
+// 宣言順でパレットの色を割り当てる。external / action は固定色を使う
+const CTX_ORDER = [...Object.keys(D.contexts||{}).filter(c=>c!=='external'&&c!=='action'),'external','action'];
+(function assignCtxColors(){
+  const light=[['#E3E8F6','#7A8BBE'],['#FBE6DA','#C98868'],['#DFF0E7','#6FA88A'],['#F0E4F4','#A784B5'],['#FAF0D3','#C4A85A'],['#E2EEF4','#7AA2B8'],['#E9E9EC','#9296A3'],['#F3E3E3','#B97A7A'],['#E4F1EE','#6FA3A0'],['#EEE9DC','#A69465']];
+  const dark=[['#283150','#8A9BD0'],['#48302A','#D39A7A'],['#213A31','#7FBA9B'],['#3A2B44','#B995C6'],['#443C22','#D1B86A'],['#22343F','#8AB4CA'],['#2C2F37','#A0A5B3'],['#3F2A2A','#C98A8A'],['#233733','#80B3AF'],['#363024','#B8A676']];
+  const defined=new Set(['curriculum','planning','learning','content','organization','notification','identity','external','action']);
+  const ids=CTX_ORDER.filter(c=>!defined.has(c));
+  if(!ids.length) return;
+  const rule=(pal,sel)=>sel+'{'+ids.map((c,i)=>{const [f,b]=pal[i%pal.length];return `--ctx-${c}:${f};--ctx-${c}-b:${b};`;}).join('')+'}';
+  const st=document.createElement('style');
+  st.textContent=rule(light,':root')+'\n@media (prefers-color-scheme: dark){'+rule(dark,':root:not([data-theme="light"])')+'}\n'+rule(dark,':root[data-theme="dark"]');
+  document.head.appendChild(st);
+})();
+const nodes = new Map(D.nodes.map(n=>[n.id,n]));
+const actions = D.actions||[];
+actions.forEach(a=>{a.isAction=true; nodes.set(a.id,a);});
+const edges = D.edges.slice();
+actions.forEach(a=>(a.targets||[]).forEach(t=>edges.push({from:a.id,to:t,pred:a.verb||'対象',cat:'action',actionLink:true,src:(a.sources||[])[0]||''})));
+
+// ---- header
+document.getElementById('title').textContent = D.title;
+document.getElementById('subtitle').textContent = D.subtitle||'';
+document.getElementById('date').textContent = D.extractedAt;
+document.getElementById('counts').textContent = `${D.nodes.length} 概念 · ${D.edges.length} 関係` + (actions.length?` · ${actions.length} Action`:'');
+
+// ---- measure helpers
+function tw(s,size,mono){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+= c>0x2E80? size*1.0 : (mono? size*0.6 : size*0.56);}return w;}
+function nodeSize(n){
+  const nameW = tw(n.name,13.5), codeW = n.code? tw(n.code,10,true):0, eyeW = tw(n.isAction? 'ACTION' : ctxName(n.ctx),9.5)*0.9;
+  const w = Math.max(112, Math.ceil(Math.max(nameW,codeW,eyeW))+26);
+  const h = n.code? 60 : 48;
+  return {w,h};
+}
+function ctxName(id){return (D.contexts[id]||{name:id||''}).name||'';}
+
+// ---- SVG build
+const svg = document.getElementById('svg');
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs||{}){e.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(e);return e;}
+const defs = el('defs',{},svg);
+for(const cat of Object.keys(CATS).concat(['action'])){
+  const m = el('marker',{id:'m-'+cat,viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'9',markerHeight:'9',markerUnits:'userSpaceOnUse',orient:'auto-start-reverse'},defs);
+  const col = cat==='action'? 'var(--ctx-action-b)':`var(--cat-${cat})`;
+  if(cat==='is-a'){ el('path',{d:'M1,1 L9,5 L1,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else if(cat==='part-of'){ el('path',{d:'M1,5 L5,1 L9,5 L5,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else { el('path',{d:'M1,1 L9,5 L1,9 Z',fill:col},m); }
+}
+const viewport = el('g',{id:'viewport'},svg);
+const gEdges = el('g',{},viewport), gNodes = el('g',{},viewport);
+
+// node positions & sizes
+for(const n of nodes.values()){ Object.assign(n, nodeSize(n)); }
+function center(n){return {x:n.x+n.w/2,y:n.y+n.h/2};}
+function anchor(n,toward){
+  const c=center(n); const dx=toward.x-c.x, dy=toward.y-c.y;
+  if(dx===0&&dy===0) return c;
+  const sx = n.w/2/Math.abs(dx||1e-9), sy = n.h/2/Math.abs(dy||1e-9);
+  const s=Math.min(sx,sy);
+  return {x:c.x+dx*s, y:c.y+dy*s};
+}
+// group parallel edges
+const pairCount = {};
+edges.forEach(e=>{const k=[e.from,e.to].sort().join('|');pairCount[k]=(pairCount[k]||0)+1;e._k=k;});
+const pairSeen = {};
+const edgeEls = [];
+edges.forEach((e,i)=>{
+  const a=nodes.get(e.from), b=nodes.get(e.to); if(!a||!b){console.warn('missing node',e);return;}
+  const idx = (pairSeen[e._k]=(pairSeen[e._k]||0)+1);
+  const total = pairCount[e._k];
+  let k = total>1 ? (idx-1 - (total-1)/2) : 0;
+  if(e.from>e.to) k=-k;
+  const ca=center(a), cb=center(b);
+  const mx=(ca.x+cb.x)/2, my=(ca.y+cb.y)/2;
+  const len=Math.hypot(cb.x-ca.x,cb.y-ca.y)||1;
+  const nx=-(cb.y-ca.y)/len, ny=(cb.x-ca.x)/len;
+  const off = (e.bend!==undefined? e.bend : k*55);
+  const ctrl={x:mx+nx*off, y:my+ny*off};
+  const p1=anchor(a,ctrl), p2=anchor(b,ctrl);
+  const d = off===0? `M${p1.x},${p1.y} L${p2.x},${p2.y}` : `M${p1.x},${p1.y} Q${ctrl.x},${ctrl.y} ${p2.x},${p2.y}`;
+  const g = el('g',{class:'edge '+(e.actionLink?'action-link':'cat-'+e.cat),'data-i':i},gEdges);
+  el('path',{d,class:'hit'},g);
+  el('path',{d,class:'vis','marker-end':`url(#m-${e.actionLink?'action':e.cat})`},g);
+  // label at curve midpoint t=.5
+  const lx = off===0? mx : (0.25*p1.x+0.5*ctrl.x+0.25*p2.x), ly = off===0? my : (0.25*p1.y+0.5*ctrl.y+0.25*p2.y);
+  const lbl = el('g',{class:'lbl'},g);
+  const w = tw(e.pred,10.5)+10;
+  el('rect',{x:lx-w/2,y:ly-8,width:w,height:16},lbl);
+  const t = el('text',{x:lx,y:ly+3.5,'text-anchor':'middle'},lbl); t.textContent=e.pred;
+  e._el=g; edgeEls.push(g);
+});
+for(const n of nodes.values()){
+  const g = el('g',{class:'node'+(n.external?' external':'')+(n.isAction?' action':''),'data-id':n.id,transform:`translate(${n.x},${n.y})`,tabindex:'0',role:'button','aria-label':n.name},gNodes);
+  const ctx = n.isAction? 'action' : n.ctx;
+  el('rect',{class:'body',width:n.w,height:n.h,style:`fill:var(--ctx-${ctx});stroke:var(--ctx-${ctx}-b)`},g);
+  const eye = el('text',{class:'eyebrow',x:12,y:15},g); eye.textContent = n.isAction? 'ACTION' : ctxName(n.ctx);
+  const nm = el('text',{class:'name',x:12,y:n.code?35:33},g); nm.textContent=n.name;
+  if(n.code){const c=el('text',{class:'code',x:12,y:50},g); c.textContent=n.code;}
+  g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectNode(n.id);}});
+  n._el=g;
+}
+
+// ---- pan/zoom
+let tf={x:0,y:0,k:1};
+function apply(){viewport.setAttribute('transform',`translate(${tf.x},${tf.y}) scale(${tf.k})`);}
+function bbox(includeActions){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of nodes.values()){ if(n.isAction&&!includeActions) continue; x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x+n.w);y1=Math.max(y1,n.y+n.h);}
+  return {x0,y0,x1,y1};
+}
+function fit(){
+  const r=svg.getBoundingClientRect(); const b=bbox(showActions);
+  const pad=40; const bw=b.x1-b.x0+pad*2, bh=b.y1-b.y0+pad*2;
+  const k=Math.min(r.width/bw, r.height/bh, 1.6);
+  tf={k, x:(r.width-(b.x1-b.x0)*k)/2 - b.x0*k, y:(r.height-(b.y1-b.y0)*k)/2 - b.y0*k};
+  apply();
+}
+function zoomAt(f,cx,cy){const nk=Math.max(.25,Math.min(3,tf.k*f));const r=nk/tf.k;tf={k:nk,x:cx-(cx-tf.x)*r,y:cy-(cy-tf.y)*r};apply();}
+svg.addEventListener('wheel',ev=>{ev.preventDefault();const r=svg.getBoundingClientRect();zoomAt(ev.deltaY<0?1.12:1/1.12,ev.clientX-r.left,ev.clientY-r.top);},{passive:false});
+let drag=null;
+svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;drag={x:ev.clientX,y:ev.clientY,tx:tf.x,ty:tf.y,moved:false,target:ev.target};svg.setPointerCapture(ev.pointerId);});
+svg.addEventListener('pointermove',ev=>{if(!drag)return;const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3){drag.moved=true;svg.classList.add('dragging');}tf.x=drag.tx+dx;tf.y=drag.ty+dy;apply();});
+svg.addEventListener('pointerup',ev=>{if(drag&&!drag.moved){const t=drag.target;const gn=t.closest&&t.closest('.node');const ge=t.closest&&t.closest('.edge');if(gn){selectNode(gn.dataset.id);}else if(ge){selectEdge(Number(ge.dataset.i));}else{clearSelection();}}drag=null;svg.classList.remove('dragging');});
+document.getElementById('zin').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1.25,r.width/2,r.height/2);};
+document.getElementById('zout').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1/1.25,r.width/2,r.height/2);};
+document.getElementById('zfit').onclick=fit;
+window.addEventListener('resize',fit);
+
+// ---- legend
+const catsEl=document.getElementById('cats');
+const hiddenCats=new Set();
+for(const [id,c] of Object.entries(CATS)){
+  const lab=document.createElement('label');
+  lab.innerHTML=`<input type="checkbox" checked data-cat="${id}"><span class="sw${id==='relates-to'?' dotted':''}" style="color:var(--cat-${id})"></span><span><span class="cat-name mono">${c.name}</span><br><span class="cat-desc">${c.desc}</span></span>`;
+  lab.querySelector('input').addEventListener('change',ev=>{ev.target.checked?hiddenCats.delete(id):hiddenCats.add(id);refreshVisibility();});
+  catsEl.appendChild(lab);
+}
+const ctxsEl=document.getElementById('ctxs');
+const usedCtx=new Set(D.nodes.map(n=>n.ctx));
+CTX_ORDER.filter(c=>usedCtx.has(c)).forEach(c=>{const s=document.createElement('span');s.className='ctx';s.innerHTML=`<i style="background:var(--ctx-${c});border-color:var(--ctx-${c}-b)"></i>${ctxName(c)}`;ctxsEl.appendChild(s);});
+let showActions=false;
+if(actions.length){document.getElementById('actionToggle').hidden=false;document.getElementById('showActions').addEventListener('change',ev=>{showActions=ev.target.checked;refreshVisibility();fit();if(!selected)renderQuestions();});}
+function refreshVisibility(){
+  edges.forEach(e=>{ if(!e._el) return; const hide = e.actionLink? !showActions : hiddenCats.has(e.cat); e._el.classList.toggle('hidden',hide);});
+  actions.forEach(a=>a._el.classList.toggle('hidden',!showActions));
+}
+
+// ---- selection / detail
+let selected=null;
+const body=document.getElementById('body');
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function setTab(name){tabs.forEach(t=>t.setAttribute('aria-selected',String(t.dataset.tab===name)));}
+tabs.forEach(t=>t.addEventListener('click',()=>{setTab(t.dataset.tab);if(t.dataset.tab==='questions')renderQuestions();else if(t.dataset.tab==='sources')renderSources();else renderDetail();}));
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function li(items){return (items||[]).map(it=>typeof it==='string'?`<li>${esc(it)}</li>`:`<li class="${it.inferred?'inf':''}">${esc(it.t)}</li>`).join('');}
+function catBadge(cat){return `<span class="cat mono" style="background:var(--cat-${cat})">${cat}</span>`;}
+function clearSelection(){selected=null;[...gNodes.children].forEach(g=>g.classList.remove('dim','selected'));edgeEls.forEach(g=>g.classList.remove('dim','selected'));}
+function highlightNode(id){
+  const nb=new Set([id]); edges.forEach(e=>{if(e.from===id)nb.add(e.to);if(e.to===id)nb.add(e.from);});
+  [...gNodes.children].forEach(g=>{g.classList.toggle('dim',!nb.has(g.dataset.id));g.classList.toggle('selected',g.dataset.id===id);});
+  edges.forEach(e=>{if(!e._el)return;e._el.classList.toggle('dim',!(e.from===id||e.to===id));e._el.classList.remove('selected');});
+}
+function selectNode(id){
+  const n=nodes.get(id); if(!n) return; selected={type:'node',id};
+  if(n.isAction&&!showActions){showActions=true;document.getElementById('showActions').checked=true;refreshVisibility();}
+  highlightNode(id); setTab('detail'); renderDetail();
+}
+function selectEdge(i){
+  const e=edges[i]; selected={type:'edge',i};
+  [...gNodes.children].forEach(g=>g.classList.toggle('dim',!(g.dataset.id===e.from||g.dataset.id===e.to)));
+  edges.forEach((x,j)=>{if(!x._el)return;x._el.classList.toggle('dim',j!==i);x._el.classList.toggle('selected',j===i);});
+  setTab('detail'); renderDetail();
+}
+function nodeLink(id){const n=nodes.get(id);return `<span class="other" data-go="${id}">${esc(n?n.name:id)}</span>`;}
+function renderDetail(){
+  if(!selected){body.innerHTML=`<p class="hint">図の概念（箱）または関係名（線上のラベル）をクリックすると、定義・別名・属性・制約・関係・出典をここに表示する。</p>`;return;}
+  if(selected.type==='edge'){
+    const e=edges[selected.i];
+    body.innerHTML=`<div class="ctx-chip">関係</div><h2>${esc(nodes.get(e.from).name)} <span style="color:var(--muted)">→</span> ${esc(nodes.get(e.to).name)}</h2>
+      <p><b>${esc(e.pred)}</b> ${e.actionLink?'<span class="cat mono" style="background:var(--ctx-action-b)">action</span>':catBadge(e.cat)}</p>
+      ${e.note?`<div class="note">${esc(e.note)}</div>`:''}
+      <h3>出典</h3><ul class="src-list"><li>${esc(e.src||'—')}</li></ul>
+      <h3>両端</h3><div class="rel"><span class="dir">from</span><span>${nodeLink(e.from)}</span></div><div class="rel"><span class="dir">to</span><span>${nodeLink(e.to)}</span></div>`;
+    bindLinks();return;
+  }
+  const n=nodes.get(selected.id);
+  if(n.isAction){renderAction(n);return;}
+  const out=edges.filter(e=>e.from===n.id&&!e.actionLink), inc=edges.filter(e=>e.to===n.id&&!e.actionLink);
+  const acts=edges.filter(e=>e.to===n.id&&e.actionLink).map(e=>nodes.get(e.from));
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-${n.ctx});border-color:var(--ctx-${n.ctx}-b)"></i>${esc(ctxName(n.ctx))}${n.external?' · このスライスでは外部参照':''}</div>
+    <h2>${esc(n.name)}</h2>
+    ${n.code?`<div class="mono" style="color:var(--muted)">${esc(n.code)}</div>`:''}
+    <p>${esc(n.def)}</p>
+    ${n.note?`<div class="note">${esc(n.note)}</div>`:''}
+    ${(n.aliases||[]).length?`<h3>別名・ソース上の名称</h3><div class="aliases">${n.aliases.map(a=>`<span class="${/^[\x20-\x7e]+$/.test(a)?'code':''}">${esc(a)}</span>`).join('')}</div>`:''}
+    ${(n.props||[]).length?`<h3>主要な属性</h3><ul class="plain">${li(n.props)}</ul>`:''}
+    ${(n.constraints||[]).length?`<h3>制約</h3><ul class="plain">${li(n.constraints)}</ul>`:''}
+    <h3>関係（${out.length+inc.length}）</h3>
+    ${out.map(e=>`<div class="rel"><span class="dir">→</span><span><span class="pred">${esc(e.pred)}</span> ${nodeLink(e.to)} ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${inc.map(e=>`<div class="rel"><span class="dir">←</span><span>${nodeLink(e.from)} が <span class="pred">${esc(e.pred)}</span> ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${acts.length?`<h3>この概念を対象にする Action</h3>${acts.map(a=>`<div class="rel"><span class="dir">⚙</span><span>${nodeLink(a.id)}</span></div>`).join('')}`:''}
+    <h3>出典</h3><ul class="src-list">${(n.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function renderAction(a){
+  const pol=a.policy;
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-action);border-color:var(--ctx-action-b)"></i>Action${a.status?` · ${esc(a.status)}`:''}</div>
+    <h2>${esc(a.name)}</h2>${a.code?`<div class="mono" style="color:var(--muted)">${esc(a.code)}</div>`:''}
+    <p>${esc(a.def||'')}</p>
+    <h3>対象概念</h3><div class="aliases">${(a.targets||[]).map(t=>`<span>${nodeLink(t)}</span>`).join('')}</div>
+    <h3>事前条件</h3><ul class="plain">${li(a.pre)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>効果</h3><ul class="plain">${li(a.effects)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>Policy</h3>${pol?`<div class="pol"><div class="who">${esc(pol.actor)}</div><div>${esc(pol.rule)}</div><dl class="kv" style="margin:6px 0 0"><dt>承認</dt><dd>${esc(pol.approval||'ソースに記載なし')}</dd></dl><ul class="src-list" style="margin-top:6px">${(pol.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`:`<p class="hint">ソースに記載なし</p>`}
+    <h3>出典</h3><ul class="src-list">${(a.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function bindLinks(){body.querySelectorAll('[data-go]').forEach(s=>s.addEventListener('click',()=>selectNode(s.dataset.go)));}
+function renderQuestions(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">この図が答えるために切り出した問い。判定は「ソースから答えられるか」。概念名を押すと図で強調する。</p>
+  ${D.questions.map((q,i)=>`<div class="q"><span class="verdict ${q.answerable}">${{yes:'ソースから答えられる',partial:'一部のみ答えられる',no:'ソースに記載なし'}[q.answerable]}</span><p class="qt">Q${i+1}. ${esc(q.q)}</p><div class="ans">${q.answer.map(p=>`<p>${esc(p)}</p>`).join('')}</div><div class="path">${(q.path||[]).map(id=>`<button data-go="${id}">${esc((nodes.get(id)||{name:id}).name)}</button>`).join('')}</div></div>`).join('')}
+  ${actions.length?`<h3>Action / Policy（${actions.length}）</h3><p class="hint">凡例の「Action / Policy を重ねる」で図に重ねられる。</p>${actions.map(a=>`<div class="action-card" data-go="${a.id}"><b>${esc(a.name)}</b><span class="st">${esc(a.status||'')}${a.policy?` · Policy: ${esc(a.policy.actor)}`:' · Policy: ソースに記載なし'}</span></div>`).join('')}`:''}
+  ${D.scopeNote?`<h3>スコープ外</h3><p style="font-size:12.5px">${esc(D.scopeNote)}</p>`:''}`;
+  body.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>selectNode(b.dataset.go)));
+}
+function renderSources(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">抽出日 ${esc(D.extractedAt)} 時点のスナップショット。以下を読んで抽出した。パスは ${esc(D.repoRoot||'リポジトリ')} 直下からの相対。</p>
+  <ul class="src-list" style="font-size:12px">${D.sources.map(s=>`<li style="margin:6px 0"><span style="color:var(--ink);font-family:'Zen Kaku Gothic New',sans-serif">${esc(s.label)}</span><br>${esc(s.path)}</li>`).join('')}</ul>
+  <h3>名寄せのメモ</h3><ul class="plain" style="font-size:12.5px">${(D.identityNotes||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+svg.addEventListener('click',()=>{});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){clearSelection();setTab('questions');renderQuestions();}});
+
+refreshVisibility(); renderQuestions(); requestAnimationFrame(fit);
+})();
+</script>

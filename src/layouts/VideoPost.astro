@@ -7,8 +7,8 @@ import Header from '../components/Header.astro';
 
 type Props = CollectionEntry<'blog'>['data'];
 
-const { title, description, pubDate, video, duration } = Astro.props;
-const src = `/videos/${video}.html`;
+const { title, description, pubDate, video, duration, embed } = Astro.props;
+const src = video ? `/videos/${video}.html` : `/${embed}.html`;
 ---
 
 <html lang="ja">
@@ -64,7 +64,7 @@ const src = `/videos/${video}.html`;
 					</div>
 					<h1>{title}</h1>
 				</div>
-				<iframe class="player" id="player" src={src} title={title} scrolling="no"></iframe>
+				<iframe class="player" id="player" src={src} title={title} scrolling="no" style={embed ? 'height: 900px' : undefined}></iframe>
 				<script is:inline>
 					// 同一オリジンなので中身の高さを読み、iframe 内でスクロールしなくて済む高さにする
 					(() => {
@@ -84,7 +84,7 @@ const src = `/videos/${video}.html`;
 					})();
 				</script>
 				<p class="open">
-					<a href={src} target="_blank" rel="noopener">動画だけを別タブで開く</a>
+					<a href={src} target="_blank" rel="noopener">{video ? '動画' : '図'}だけを別タブで開く</a>
 				</p>
 				<div class="prose">
 					<slot />
