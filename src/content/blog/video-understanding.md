@@ -1,5 +1,5 @@
 ---
-title: '理解の組み立て方'
+title: '理解を高速化する(動画版)'
 description: '人の「理解」の作り方(認知科学の実験から)'
 pubDate: '2026-10-06'
 video: 'understanding'
