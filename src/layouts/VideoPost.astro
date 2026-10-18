@@ -33,8 +33,8 @@ const src = `/videos/${video}.html`;
 			}
 			.player {
 				width: 100%;
-				height: calc(100vh - 140px);
-				min-height: 640px;
+				height: 760px; /* 読み込み後に中身の高さへ合わせる(下の script) */
+				overflow: hidden;
 				border: 1px solid #ddd;
 				border-radius: 12px;
 				background: #fff;
@@ -64,7 +64,25 @@ const src = `/videos/${video}.html`;
 					</div>
 					<h1>{title}</h1>
 				</div>
-				<iframe class="player" src={src} title={title} loading="lazy"></iframe>
+				<iframe class="player" id="player" src={src} title={title} scrolling="no"></iframe>
+				<script is:inline>
+					// 同一オリジンなので中身の高さを読み、iframe 内でスクロールしなくて済む高さにする
+					(() => {
+						const f = document.getElementById('player');
+						const fit = () => {
+							const d = f.contentDocument;
+							if (!d || !d.documentElement) return;
+							const h = d.documentElement.scrollHeight;
+							if (h > 100) f.style.height = h + 'px';
+						};
+						f.addEventListener('load', () => {
+							fit();
+							const d = f.contentDocument;
+							if (d && 'ResizeObserver' in window) new ResizeObserver(fit).observe(d.documentElement);
+							window.addEventListener('resize', fit);
+						});
+					})();
+				</script>
 				<p class="open">
 					<a href={src} target="_blank" rel="noopener">動画だけを別タブで開く</a>
 				</p>
