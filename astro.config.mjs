@@ -14,9 +14,11 @@ export default defineConfig({
 		'/blog/video-fluency-vs-diff': '/blog/fluency-vs-diff/',
 		'/blog/video-forgetting-mechanisms': '/blog/forgetting-is-six-events/',
 		'/blog/video-pstack': '/blog/pstack/',
-		// AWS の概念図 2 本は 1 本にまとめた(2026-10-18)
-		'/blog/aws-vpc-ontology-map': '/blog/aws-ontology-map/',
-		'/blog/aws-messaging-ontology-map': '/blog/aws-ontology-map/',
+		// Git と AWS の概念図 3 本は、オントロジーマップの評価記事 1 本にまとめた(2026-10-18)
+		'/blog/aws-vpc-ontology-map': '/blog/ontology-map-evaluation/',
+		'/blog/aws-messaging-ontology-map': '/blog/ontology-map-evaluation/',
+		'/blog/aws-ontology-map': '/blog/ontology-map-evaluation/',
+		'/blog/git-ontology-map': '/blog/ontology-map-evaluation/',
 	},
 	integrations: [mdx(), sitemap()],
 	fonts: [
