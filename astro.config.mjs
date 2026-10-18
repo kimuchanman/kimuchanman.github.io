@@ -7,6 +7,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://kimuchanman.github.io',
+	redirects: { '/blog': '/' },
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{
