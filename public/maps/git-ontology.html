@@ -10,6 +10,7 @@
   - ドラッグ用の setPointerCapture を SVG にかけると click の宛先が SVG になり、ノードの click ハンドラが呼ばれない。
     選択は pointerup で pointerdown 時の target を closest('.node' / '.edge') して判定する
   - ctx の色は CSS 変数 --ctx-<id> / --ctx-<id>-b で引く。既定名以外の ctx id は assignCtxColors がパレットから自動付与する（未定義だと箱が透明になった）
+  - 凡例は #legendToggle で畳める。描画領域の高さが 900px 未満なら畳んだ状態で始める(ブログの iframe で凡例が図を覆った)
   - 当たり判定用 path.hit は `.edge path.hit{stroke:transparent!important}` で明示的に打ち消す（カテゴリ色の指定に負けて太線になった）
 -->
 <meta charset="utf-8">
@@ -129,6 +130,13 @@ main{flex:1;display:flex;min-height:0}
 #legend .ctx{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
 #legend .ctx i{width:11px;height:11px;border-radius:2px;border:1px solid;display:inline-block}
 #legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#legendToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;font:inherit}
+#legendToggle .h{margin:0}
+#legendToggle .chev{font-size:11px;transition:transform .15s}
+#legend.collapsed #legendBody{display:none}
+#legend.collapsed #legendToggle .chev{transform:rotate(-90deg)}
+#legend.collapsed #actionToggle hr{display:none}
+#legendBody{display:flex;flex-direction:column;gap:6px}
 #zoom{right:14px;top:14px;display:flex;flex-direction:column}
 #zoom button{width:32px;height:30px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;cursor:pointer;font-family:inherit}
 #zoom button:last-child{border-bottom:0}
@@ -196,11 +204,14 @@ li.inf::after{content:" 推定";font-size:10px;border:1px solid var(--line-stron
   <div id="stage">
     <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="概念マップ"></svg>
     <div id="legend" class="panel-float">
+      <button id="legendToggle" type="button" aria-expanded="true" aria-controls="legendBody"><span class="h">凡例</span><span class="chev" aria-hidden="true">▾</span></button>
+      <div id="legendBody">
       <div class="h">関係カテゴリ（クリックで表示切替）</div>
       <div class="cats" id="cats"></div>
       <hr>
       <div class="h">コンテキスト</div>
       <div class="ctxs" id="ctxs"></div>
+      </div>
       <div id="actionToggle" hidden><hr><label><input type="checkbox" id="showActions"> <span class="cat-name">Action / Policy を重ねる</span></label></div>
     </div>
     <div id="zoom" class="panel-float">
@@ -360,6 +371,11 @@ document.getElementById('zfit').onclick=fit;
 window.addEventListener('resize',fit);
 
 // ---- legend
+// 凡例は畳める。ブログの iframe のように描画領域が低いときは畳んだ状態で始める
+const legendEl=document.getElementById('legend'), legendToggle=document.getElementById('legendToggle');
+function setLegend(open){legendEl.classList.toggle('collapsed',!open);legendToggle.setAttribute('aria-expanded',String(open));}
+legendToggle.addEventListener('click',()=>setLegend(legendEl.classList.contains('collapsed')));
+setLegend(document.getElementById('stage').clientHeight>=900);
 const catsEl=document.getElementById('cats');
 const hiddenCats=new Set();
 for(const [id,c] of Object.entries(CATS)){
