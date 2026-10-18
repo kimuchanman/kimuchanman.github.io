@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  input-ontology-map skill の共通描画テンプレート。build.mjs が TITLE と DATA_JSON のプレースホルダ（二重波括弧）を差し込む。
+  書き直さないこと。過去に再発したバグとその対策:
+  - このコメント内にプレースホルダの文字列をそのまま書かない。String.replace が先頭一致でコメント側を置換し、<title> と data script が未置換のまま出た（JSON.parse が position 1 で失敗）
+  - Action ノードは ctx を持たない。幅計算・ラベル描画は n.isAction を先に見る（ctxName(undefined) で例外になり描画全体が止まった）
+  - ドラッグ用の setPointerCapture を SVG にかけると click の宛先が SVG になり、ノードの click ハンドラが呼ばれない。
+    選択は pointerup で pointerdown 時の target を closest('.node' / '.edge') して判定する
+  - ctx の色は CSS 変数 --ctx-<id> / --ctx-<id>-b で引く。既定名以外の ctx id は assignCtxColors がパレットから自動付与する（未定義だと箱が透明になった）
+  - 凡例は #legendToggle で畳める。描画領域の高さが 900px 未満なら畳んだ状態で始める(ブログの iframe で凡例が図を覆った)
+  - 当たり判定用 path.hit は `.edge path.hit{stroke:transparent!important}` で明示的に打ち消す（カテゴリ色の指定に負けて太線になった）
+-->
+<meta charset="utf-8">
+<title>AWS 非同期メッセージング 概念図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F8; --surface:#FFFFFF; --surface-2:#EBEDF2; --ink:#1B1F2A; --muted:#5D6375; --line:#D6DAE3; --line-strong:#B9BFCC;
+  --accent:#3B4C7A; --accent-ink:#FFFFFF; --focus:#3B6FD1;
+  --ctx-curriculum:#E3E8F6; --ctx-curriculum-b:#7A8BBE;
+  --ctx-planning:#FBE6DA; --ctx-planning-b:#C98868;
+  --ctx-learning:#DFF0E7; --ctx-learning-b:#6FA88A;
+  --ctx-content:#F0E4F4; --ctx-content-b:#A784B5;
+  --ctx-organization:#FAF0D3; --ctx-organization-b:#C4A85A;
+  --ctx-notification:#E2EEF4; --ctx-notification-b:#7AA2B8;
+  --ctx-identity:#E9E9EC; --ctx-identity-b:#9296A3;
+  --ctx-external:#F4F5F8; --ctx-external-b:#A6ABB8;
+  --ctx-action:#FFF7E0; --ctx-action-b:#B58A1E;
+  --cat-is-a:#7B61B8; --cat-part-of:#2C8C7A; --cat-depends-on:#3B6FD1; --cat-produces:#3F9A4B; --cat-constrains:#D0532B; --cat-relates-to:#7F8592;
+  --ok:#2F8A4C; --warn:#B8791C; --ng:#B94A3A;
+  --shadow:0 1px 2px rgba(20,24,36,.06),0 6px 20px rgba(20,24,36,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+    --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+    --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+    --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+    --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+    --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+    --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+    --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+    --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+    --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+    --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+    --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+    --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+  --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+  --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+  --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+  --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+  --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+  --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+  --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+  --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+  --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+  --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+  --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+  --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.55;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em}
+header{display:flex;align-items:baseline;gap:20px;padding:12px 20px 10px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+header h1{font-family:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;font-weight:600;font-size:21px;letter-spacing:.02em;margin:0;text-wrap:balance}
+header .sub{color:var(--muted);font-size:13px}
+header .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+header .meta .tag{border:1px solid var(--line);border-radius:3px;padding:1px 7px;font-family:"IBM Plex Mono",monospace;font-size:11px}
+main{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;min-width:0;background:var(--paper)}
+#stage svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#stage svg.dragging{cursor:grabbing}
+.grid{stroke:var(--line);stroke-opacity:.55}
+.node rect.body{stroke-width:1.2;rx:5;ry:5;transition:opacity .15s}
+.node text{pointer-events:none}
+.node .eyebrow{font-size:9.5px;letter-spacing:.08em;fill:var(--muted);font-weight:500}
+.node .name{font-size:13.5px;font-weight:700;fill:var(--ink)}
+.node .code{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.node{cursor:pointer}
+.node.dim{opacity:.22}
+.node.selected rect.body{stroke-width:2.4;filter:drop-shadow(0 0 0 transparent)}
+.node.external rect.body{stroke-dasharray:4 3}
+.node.action rect.body{rx:16;ry:16;stroke-dasharray:2 2.5}
+.edge path{fill:none;stroke-width:1.5;transition:opacity .15s}
+.edge.cat-is-a path{stroke:var(--cat-is-a)}
+.edge.cat-part-of path{stroke:var(--cat-part-of)}
+.edge.cat-depends-on path{stroke:var(--cat-depends-on)}
+.edge.cat-produces path{stroke:var(--cat-produces)}
+.edge.cat-constrains path{stroke:var(--cat-constrains)}
+.edge.cat-relates-to path{stroke:var(--cat-relates-to);stroke-dasharray:3 3}
+.edge.action-link path{stroke:var(--ctx-action-b);stroke-dasharray:1.5 3;stroke-width:1.3}
+.edge path.hit{stroke:transparent!important;stroke-width:10;stroke-dasharray:none!important;cursor:pointer}
+.edge .lbl rect{fill:var(--paper);stroke:none;rx:3;ry:3;fill-opacity:.92}
+.edge .lbl text{font-size:10.5px;font-weight:500;paint-order:stroke}
+.edge.cat-is-a .lbl text{fill:var(--cat-is-a)}
+.edge.cat-part-of .lbl text{fill:var(--cat-part-of)}
+.edge.cat-depends-on .lbl text{fill:var(--cat-depends-on)}
+.edge.cat-produces .lbl text{fill:var(--cat-produces)}
+.edge.cat-constrains .lbl text{fill:var(--cat-constrains)}
+.edge.cat-relates-to .lbl text{fill:var(--cat-relates-to)}
+.edge.action-link .lbl text{fill:var(--ctx-action-b)}
+.edge .lbl{cursor:pointer}
+.edge.dim{opacity:.1}
+.edge.hidden,.node.hidden{display:none}
+.edge.selected path.vis{stroke-width:2.6}
+/* overlays */
+.panel-float{position:absolute;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px}
+#legend{left:14px;bottom:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;max-width:300px}
+#legend .h{font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;font-weight:500;margin-bottom:2px}
+#legend .cats{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+#legend label{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:2px 0}
+#legend label input{margin:0;accent-color:var(--accent)}
+#legend .sw{width:22px;height:0;border-top:2px solid;flex:none;position:relative}
+#legend .sw.dotted{border-top-style:dashed}
+#legend .sw::after{content:"";position:absolute;right:-1px;top:-4px;border:3px solid transparent;border-left:5px solid currentColor}
+#legend .cat-name{color:var(--ink)}
+#legend .cat-desc{color:var(--muted);font-size:10.5px}
+#legend .ctxs{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:2px}
+#legend .ctx{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
+#legend .ctx i{width:11px;height:11px;border-radius:2px;border:1px solid;display:inline-block}
+#legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#legendToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;font:inherit}
+#legendToggle .h{margin:0;white-space:nowrap}
+#legendToggle .chev{flex:none;width:16px!important;height:16px!important;color:var(--ink);transition:transform .15s}
+#legend.collapsed #legendBody{display:none}
+#legend.collapsed #legendToggle .chev{transform:rotate(-90deg)}
+#legend.collapsed #actionToggle hr{display:none}
+#legendBody{display:flex;flex-direction:column;gap:6px}
+#zoom{right:14px;top:14px;display:flex;flex-direction:column}
+#zoom button{width:32px;height:30px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;cursor:pointer;font-family:inherit}
+#zoom button:last-child{border-bottom:0}
+#zoom button:hover{background:var(--surface-2)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* detail panel */
+aside{width:400px;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+aside .tabs{display:flex;border-bottom:1px solid var(--line)}
+aside .tabs button{flex:1;padding:10px 6px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+aside .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+aside .body{overflow:auto;padding:16px 18px 24px;flex:1}
+aside h2{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:19px;margin:0 0 2px;line-height:1.3;text-wrap:balance}
+aside h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:500}
+aside p{margin:6px 0}
+.ctx-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px}
+.ctx-chip i{width:10px;height:10px;border-radius:2px;border:1px solid;display:inline-block}
+.aliases{display:flex;flex-wrap:wrap;gap:5px}
+.aliases span{background:var(--surface-2);border-radius:3px;padding:1px 7px;font-size:11.5px}
+.aliases span.code{font-family:"IBM Plex Mono",monospace;font-size:11px}
+ul.plain{margin:0;padding-left:18px}
+ul.plain li{margin:3px 0}
+li.inf{color:var(--muted)}
+li.inf::after{content:" 推定";font-size:10px;border:1px solid var(--line-strong);border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:middle}
+.rel{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+.rel:last-child{border-bottom:0}
+.rel .dir{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted)}
+.rel .pred{font-weight:700}
+.rel .cat{font-family:"IBM Plex Mono",monospace;font-size:10.5px;border-radius:3px;padding:0 5px;color:var(--paper);margin-left:6px;vertical-align:middle}
+.rel .other{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.rel .other:hover{color:var(--accent)}
+.rel .src{grid-column:2;font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;word-break:break-all}
+.src-list{margin:0;padding-left:0;list-style:none}
+.src-list li{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin:3px 0;word-break:break-all}
+.note{background:var(--surface-2);border-radius:4px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.q{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:0 0 12px}
+.q .qt{font-weight:700;font-size:14px;margin:0 0 6px;text-wrap:balance}
+.q .ans{font-size:12.5px}
+.q .verdict{display:inline-block;font-size:11px;border-radius:3px;padding:1px 7px;margin-bottom:6px;color:#fff}
+.q .verdict.yes{background:var(--ok)}.q .verdict.partial{background:var(--warn)}.q .verdict.no{background:var(--ng)}
+.q .path{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.q .path button{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;font-family:inherit;font-size:11.5px;padding:1px 7px;cursor:pointer}
+.q .path button:hover{background:var(--surface-2)}
+.hint{color:var(--muted);font-size:12px}
+.action-card{border:1px dashed var(--ctx-action-b);border-radius:6px;padding:10px 12px;margin:0 0 10px;cursor:pointer}
+.action-card:hover{background:var(--surface-2)}
+.action-card b{display:block}
+.action-card .st{font-size:11px;color:var(--muted)}
+.pol{border-left:3px solid var(--ctx-action-b);padding:6px 10px;background:var(--surface-2);border-radius:0 4px 4px 0;margin:6px 0}
+.pol .who{font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+@media (max-width:900px){main{flex-direction:column}aside{width:auto;height:45%;border-left:0;border-top:1px solid var(--line)}#legend{max-width:240px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <h1 id="title"></h1>
+  <span class="sub" id="subtitle"></span>
+  <div class="meta">
+    <span>抽出日 <span class="tag" id="date"></span></span>
+    <span id="counts"></span>
+  </div>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="概念マップ"></svg>
+    <div id="legend" class="panel-float">
+      <button id="legendToggle" type="button" aria-expanded="true" aria-controls="legendBody"><span class="h">凡例</span><svg class="chev" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="legendBody">
+      <div class="h">関係カテゴリ（クリックで表示切替）</div>
+      <div class="cats" id="cats"></div>
+      <hr>
+      <div class="h">コンテキスト</div>
+      <div class="ctxs" id="ctxs"></div>
+      </div>
+      <div id="actionToggle" hidden><hr><label><input type="checkbox" id="showActions"> <span class="cat-name">Action / Policy を重ねる</span></label></div>
+    </div>
+    <div id="zoom" class="panel-float">
+      <button id="zin" title="拡大" aria-label="拡大">＋</button>
+      <button id="zout" title="縮小" aria-label="縮小">－</button>
+      <button id="zfit" title="全体表示" aria-label="全体表示">⊡</button>
+    </div>
+  </div>
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="questions">問い</button>
+      <button role="tab" aria-selected="false" data-tab="detail">詳細</button>
+      <button role="tab" aria-selected="false" data-tab="sources">ソース</button>
+    </div>
+    <div class="body" id="body"></div>
+  </aside>
+</main>
+
+<script id="data" type="application/json">{"title":"AWS 非同期メッセージング 概念図","subtitle":"SNS のファンアウト・SQS の失敗時の行き先・EventBridge との使い分け","extractedAt":"2026-10-18","repoRoot":"AWS 公式ドキュメント(docs.aws.amazon.com)","contexts":{"app":{"name":"アプリケーション"},"sns":{"name":"SNS"},"sqs":{"name":"SQS"},"eb":{"name":"EventBridge"}},"sources":[{"label":"SNS から SQS へのファンアウト","path":"https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html"},{"label":"SNS のメッセージフィルタリング","path":"https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html"},{"label":"SNS のデッドレターキュー","path":"https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"},{"label":"SQS のデッドレターキュー","path":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"},{"label":"SQS の DLQ 設定(キュー種別の一致)","path":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-dead-letter-queue.html"},{"label":"SQS の可視性タイムアウト","path":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"},{"label":"Lambda と SQS(イベントソースマッピング)","path":"https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html"},{"label":"EventBridge とは","path":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html"},{"label":"EventBridge のルール","path":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rules.html"},{"label":"EventBridge のイベントパターン","path":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html"},{"label":"EventBridge のターゲット","path":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html"},{"label":"SQS・SNS・EventBridge の選び方","path":"https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"}],"identityNotes":["EventBridge は CloudWatch Events の後継の名前(選び方ガイドに「formerly known as CloudWatch Events」)","「デッドレターキュー」「DLQ」「dead-letter queue」は同じもの。SNS の DLQ も実体は普通の SQS キュー(SNS の DLQ ページ)なので、DLQ は 1 つの概念にまとめた","「リドライブポリシー」は SQS キューと SNS サブスクリプションの両方にあるが、付く場所と中身が違う。SQS 側は maxReceiveCount を持ち、SNS 側は deadLetterTargetArn だけを持つ。別の概念として 2 つに分けた","「送信元キュー(source queue)」は DLQ を指す側の SQS キューの呼び名で、SQS キューと同じ概念に寄せた","受信回数は Lambda に渡るメッセージの属性名 ApproximateReceiveCount に寄せた。maxReceiveCount はこの回数と比べる上限で、リドライブポリシーの属性として置いた(推定を含む整理)"],"scopeNote":"EventBridge Pipes・Scheduler・新しい Custom Event Bus(サブスクライバ型)、SNS の HTTP / メール / SMS 配信、暗号化(KMS)、料金は含めない。EventBridge のルールとターゲットは Custom Event Bus - Classic の説明に従った。","questions":[{"q":"SNS と SQS をどう組むとファンアウトになるか","answerable":"yes","answer":["SQS キューを SNS トピックにサブスクライブすると、トピックにパブリッシュしたメッセージが、サブスクライブした各キューに SQS メッセージとして届く。キューを複数サブスクライブすれば、1 回のパブリッシュが複数のキューに届く。","サブスクリプションにフィルタポリシーを付けると、そのサブスクリプションは条件に合うメッセージだけを受け取る。フィルタポリシーが無いサブスクリプションは全メッセージを受け取る。"],"path":["producer","topic","subscription","filterPolicy","queue"]},{"q":"処理に失敗したメッセージはどこへ行くか","answerable":"yes","answer":["SQS から受信したメッセージは、可視性タイムアウト(既定 30 秒)の間だけ他のコンシューマから隠れる。その間に削除されなければ、またキューに見える状態に戻り、再び受信される。","送信元キューにリドライブポリシーがあれば、受信回数が maxReceiveCount を超えたメッセージは DLQ へ移る。SNS 側では、配信できなかったメッセージはサブスクリプションのリドライブポリシーが指す DLQ に入り、DLQ が無ければ捨てられる。"],"path":["consumer","message","visibilityTimeout","receiveCount","sqsRedrive","dlq","snsRedrive"]},{"q":"EventBridge と SNS はどう使い分けるか","answerable":"partial","answer":["選び方ガイドは、SNS を購読者へのプッシュ型の pub/sub(ファンアウト通知向け)、EventBridge をルールがイベントを照合してターゲットへ送る型(イベント駆動・アカウント間の共有向け)と整理している。フィルタは SNS がサブスクリプションのフィルタポリシー、EventBridge がイベントパターンで、EventBridge は内容に基づく複雑な照合ができる。","順序保証は SNS の FIFO トピックにはあり、EventBridge には無い。どちらを選ぶべきかの判断基準はガイドの比較表までで、個別の判断はソースに記載がない。"],"path":["topic","subscription","filterPolicy","eventBus","rule","eventPattern","target"]}],"nodes":[{"id":"producer","ctx":"app","name":"送信側アプリケーション","code":"producer","x":40,"y":150,"def":"トピックへのパブリッシュ、キューへの送信、イベントバスへのイベント送信を行う側。","aliases":["パブリッシャ(SNS の文脈)"],"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html"]},{"id":"consumer","ctx":"app","name":"コンシューマ","code":"consumer","x":40,"y":480,"def":"SQS キューをポーリングしてメッセージを受信・処理・削除する側。","aliases":["pull-based consumer(EC2 や Lambda など)"],"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html","https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"]},{"id":"lambdaEsm","ctx":"app","name":"Lambda のイベントソースマッピング","code":"event source mapping","x":40,"y":600,"def":"Lambda が SQS キューをポーリングし、メッセージのバッチで関数を同期的に呼ぶ仕組み。","props":["既定のバッチは最大 10 件","関数が成功するとバッチのメッセージを削除する"],"constraints":["関数とキューは同じリージョン(アカウントは別でもよい)","エラー時はバッチ全体が可視性タイムアウト後に再び見える(既定)"],"sources":["https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html"]},{"id":"topic","ctx":"sns","name":"SNS トピック","code":"topic","x":320,"y":40,"def":"パブリッシュされたメッセージを、サブスクリプションを通じて購読者へプッシュする宛先。","props":["種類: 標準 / FIFO(FIFO トピックは順序を保証)"],"constraints":["メッセージを保持しない(リアルタイムに配信する)"],"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"]},{"id":"subscription","ctx":"sns","name":"サブスクリプション","code":"subscription","x":320,"y":150,"def":"トピックと 1 つのエンドポイント(SQS キュー・Lambda・HTTP/S など)を結ぶ登録。配信はこの単位で行う。","sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"]},{"id":"filterPolicy","ctx":"sns","name":"フィルタポリシー","code":"filter policy","x":320,"y":260,"def":"サブスクリプションが受け取るメッセージの条件を書いた JSON。","props":["対象: メッセージ属性か本文(filter policy scope で選ぶ)"],"constraints":["無ければ全メッセージを受け取る","全条件を満たしたメッセージだけ届く"],"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html"]},{"id":"snsRedrive","ctx":"sns","name":"リドライブポリシー(SNS)","code":"redrive policy","x":320,"y":370,"def":"サブスクリプションに付け、配信できなかったメッセージを入れる DLQ の ARN(deadLetterTargetArn)を持つ JSON。","constraints":["DLQ はサブスクリプションと同じアカウント・リージョン","FIFO トピックのサブスクリプションは FIFO キューを使う"],"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"]},{"id":"queue","ctx":"sqs","name":"SQS キュー","code":"queue","x":600,"y":260,"def":"メッセージを保持し、コンシューマのポーリングに応じて渡すキュー。DLQ を指す側は送信元キューと呼ぶ。","aliases":["送信元キュー(source queue)"],"props":["種類: 標準 / FIFO","保持期間は最大 14 日"],"constraints":["標準キューは at-least-once で、重複配信がありうる"],"sources":["https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"]},{"id":"message","ctx":"sqs","name":"SQS メッセージ","code":"message","x":600,"y":370,"def":"キューに入った 1 件のデータ。SNS から届いたものは件名・本文・メタデータの JSON になる。","props":["受信後、削除されるまでは in-flight"],"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"]},{"id":"visibilityTimeout","ctx":"sqs","name":"可視性タイムアウト","code":"visibility timeout","x":600,"y":480,"def":"受信したメッセージを他のコンシューマから隠しておく時間。","props":["既定 30 秒","ChangeMessageVisibility で延長・短縮できる"],"constraints":["最初の受信から最大 12 時間"],"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"]},{"id":"receiveCount","ctx":"sqs","name":"受信回数","code":"ApproximateReceiveCount","x":600,"y":600,"def":"メッセージが受信された回数。Lambda に渡るメッセージの属性として見える。","constraints":[{"t":"受信するたびに 1 増え、maxReceiveCount と比べられる(属性名と maxReceiveCount の説明から推した整理。明記した文はない)","inferred":true}],"sources":["https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"]},{"id":"sqsRedrive","ctx":"sqs","name":"リドライブポリシー(SQS)","code":"redrive policy","x":880,"y":370,"def":"送信元キューに付け、maxReceiveCount と移動先の DLQ を決める設定。","props":["maxReceiveCount: DLQ へ移るまでに受信できる回数(1〜1,000)"],"constraints":["標準キューで maxReceiveCount が 3 より大きいとき、削除されずに 3 回以上受信されたメッセージはキューの後ろへ回る"],"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-dead-letter-queue.html"]},{"id":"dlq","ctx":"sqs","name":"デッドレターキュー","code":"DLQ","x":880,"y":260,"def":"処理・配信に失敗したメッセージを隔離する、普通の SQS キュー。","aliases":["DLQ","dead-letter queue"],"constraints":["送信元と同じアカウント・リージョン","キュー種別は送信元と一致(FIFO には FIFO、標準には標準)","SQS は自動では作らない","保持期間は送信元より長くするのが推奨(標準キューは元の受信時刻で期限が決まるため)"],"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-dead-letter-queue.html","https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"]},{"id":"redriveAllow","ctx":"sqs","name":"リドライブ許可ポリシー","code":"redrive allow policy","x":880,"y":150,"def":"DLQ 側に付け、どの送信元キューがこの DLQ を使えるかを決める設定。","props":["allowAll(既定) / byQueue(最大 10 キュー) / denyAll"],"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"]},{"id":"eventBus","ctx":"eb","name":"イベントバス","code":"event bus","x":1160,"y":150,"def":"イベントを受け取り、0 個以上のターゲットへ届けるルーター。","aliases":["CloudWatch Events(旧称のサービス名)"],"constraints":["イベントを保持しない(Classic の場合)","順序を保証しない"],"sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html","https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"]},{"id":"event","ctx":"eb","name":"イベント","code":"event","x":1160,"y":40,"def":"source・detail-type・detail などを持つ JSON。AWS サービス・自前のアプリ・SaaS から届く。","sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html","https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html"]},{"id":"rule","ctx":"eb","name":"ルール","code":"rule","x":1160,"y":260,"def":"どのイベントをどのターゲットへ送るかを決める、イベントバスごとの設定。","props":["種類: イベントパターンで照合 / スケジュール(旧機能) / AWS サービスの管理ルール"],"constraints":["1 ルールにターゲットは最大 5 個"],"sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rules.html","https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html"]},{"id":"eventPattern","ctx":"eb","name":"イベントパターン","code":"event pattern","x":1160,"y":370,"def":"イベントと同じ構造の JSON で、送るイベントの条件を書いたもの。一致するかしないかの 2 値。","sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html"]},{"id":"target","ctx":"eb","name":"ターゲット","code":"target","x":1160,"y":480,"def":"ルールに一致したイベントの送り先。Lambda・SNS トピック・SQS キュー・別のイベントバスなど。","constraints":["EventBridge にターゲットへのアクセス権が要る"],"sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html"]}],"edges":[{"from":"producer","to":"topic","pred":"パブリッシュする","cat":"relates-to","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html"},{"from":"producer","to":"event","pred":"イベントを送る","cat":"produces","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html","bend":-80},{"from":"subscription","to":"topic","pred":"トピックに登録される","cat":"part-of","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html"},{"from":"subscription","to":"queue","pred":"キューを配信先にする","cat":"relates-to","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html"},{"from":"filterPolicy","to":"subscription","pred":"受け取るメッセージを絞る","cat":"constrains","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html"},{"from":"snsRedrive","to":"subscription","pred":"サブスクリプションに付く","cat":"part-of","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"},{"from":"snsRedrive","to":"dlq","pred":"配信できないメッセージの行き先を指す","cat":"relates-to","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html","bend":90},{"from":"topic","to":"message","pred":"SQS メッセージとして届ける","cat":"produces","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","bend":-60},{"from":"message","to":"queue","pred":"キューに保持される","cat":"part-of","src":"https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"},{"from":"consumer","to":"queue","pred":"ポーリングで受信する","cat":"depends-on","src":"https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"},{"from":"lambdaEsm","to":"consumer","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html(pull-based consumers such as Lambda)"},{"from":"visibilityTimeout","to":"message","pred":"受信後に他のコンシューマから隠す","cat":"constrains","src":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"},{"from":"receiveCount","to":"message","pred":"メッセージの属性","cat":"part-of","src":"https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html"},{"from":"sqsRedrive","to":"queue","pred":"送信元キューに付く","cat":"part-of","src":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"},{"from":"sqsRedrive","to":"receiveCount","pred":"maxReceiveCount と比べる","cat":"depends-on","src":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"},{"from":"sqsRedrive","to":"dlq","pred":"移動先の DLQ を指す","cat":"relates-to","src":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-dead-letter-queue.html"},{"from":"dlq","to":"queue","pred":"一種(普通の SQS キュー)","cat":"is-a","src":"https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"},{"from":"redriveAllow","to":"dlq","pred":"使える送信元キューを制限する","cat":"constrains","src":"https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"},{"from":"event","to":"eventBus","pred":"バスに届く","cat":"relates-to","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-what-is.html"},{"from":"rule","to":"eventBus","pred":"バスごとに作る","cat":"part-of","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rules.html"},{"from":"eventPattern","to":"rule","pred":"ルールの照合条件になる","cat":"part-of","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rules.html"},{"from":"eventPattern","to":"event","pred":"送るイベントを選ぶ","cat":"constrains","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html","bend":120},{"from":"rule","to":"target","pred":"一致したイベントを送る","cat":"relates-to","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html","bend":120},{"from":"topic","to":"target","pred":"ターゲットに指定できる","cat":"relates-to","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html","bend":160},{"from":"queue","to":"target","pred":"ターゲットに指定できる","cat":"relates-to","src":"https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html","bend":100}],"actions":[{"id":"actPublish","name":"トピックにパブリッシュする","code":"Publish","verb":"パブリッシュする","x":320,"y":720,"status":"SNS","targets":["topic","subscription","message"],"def":"トピックにメッセージを送る。SNS は各サブスクリプションのフィルタポリシーと照合し、合ったものに配信する。","pre":[],"effects":["フィルタポリシーに合う各サブスクリプションへ配信","SQS キューには SQS メッセージとして届く","配信できず DLQ も無ければ捨てられる"],"policy":null,"sources":["https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html","https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html","https://docs.aws.amazon.com/sns/latest/dg/sns-dead-letter-queues.html"]},{"id":"actSend","name":"キューに送信する","code":"SendMessage","verb":"送信する","x":40,"y":720,"status":"SQS","targets":["queue","message"],"def":"キューにメッセージを 1 件入れる。","pre":[],"effects":["メッセージがキューに保持される"],"policy":null,"sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html(sqs:SendMessage)","https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"]},{"id":"actReceive","name":"メッセージを受信する","code":"ReceiveMessage","verb":"受信する","x":600,"y":720,"status":"SQS","targets":["message","visibilityTimeout","receiveCount"],"def":"コンシューマがキューからメッセージを受け取る。メッセージはキューに残ったまま隠れる。","pre":["メッセージが見える状態"],"effects":["可視性タイムアウトが始まる",{"t":"受信回数が 1 増える","inferred":true},"受信回数が maxReceiveCount を超えると DLQ へ移る"],"policy":null,"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html","https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"]},{"id":"actDelete","name":"メッセージを削除する","code":"DeleteMessage","verb":"削除する","x":880,"y":720,"status":"SQS","targets":["message","queue"],"def":"処理を終えたメッセージをキューから消す。Lambda のイベントソースマッピングは成功時に自動で行う。","pre":["可視性タイムアウト内"],"effects":["メッセージがキューから消える"],"policy":null,"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html","https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html"]},{"id":"actChangeVis","name":"可視性タイムアウトを変える","code":"ChangeMessageVisibility","verb":"隠す時間を変える","x":880,"y":600,"status":"SQS","targets":["visibilityTimeout"],"def":"受信中のメッセージの可視性タイムアウトを延ばす・縮める。0 にするとすぐ他のコンシューマに見える。","pre":[],"effects":["隠れている時間が変わる"],"policy":null,"sources":["https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"]},{"id":"actRoute","name":"ルールがイベントを送る","code":"(EventBridge)","verb":"ターゲットへ送る","x":1160,"y":600,"status":"EventBridge","targets":["rule","target"],"def":"イベントパターンに一致したイベントを、ルールのターゲットへ送る。","pre":["イベントがイベントパターンに一致する"],"effects":["最大 5 個のターゲットへ並列に送る","失敗時は既定で 24 時間・最大 185 回再試行"],"policy":{"actor":"EventBridge","rule":"ターゲットのリソースにアクセスする権限が要る(IAM の実行ロールなど)","approval":"IAM ロール","sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html"]},"sources":["https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html","https://docs.aws.amazon.com/decision-guides/latest/sns-or-sqs-or-eventbridge/sns-or-sqs-or-eventbridge.html"]}]}</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const CATS = {
+  'is-a':{name:'is-a',desc:'汎化。下位は上位の一種'},
+  'part-of':{name:'part-of',desc:'構成。全体を成す部分'},
+  'depends-on':{name:'depends-on',desc:'参照・利用。相手がないと成立しない'},
+  'produces':{name:'produces',desc:'生成。相手を生み出す'},
+  'constrains':{name:'constrains',desc:'制約。値・量・状態を制限'},
+  'relates-to':{name:'relates-to',desc:'所属・担当・対象など'},
+};
+// contexts はデータ側で自由に名付ける。既定の CSS 変数（curriculum… の名前）に無い ctx id には、
+// 宣言順でパレットの色を割り当てる。external / action は固定色を使う
+const CTX_ORDER = [...Object.keys(D.contexts||{}).filter(c=>c!=='external'&&c!=='action'),'external','action'];
+(function assignCtxColors(){
+  const light=[['#E3E8F6','#7A8BBE'],['#FBE6DA','#C98868'],['#DFF0E7','#6FA88A'],['#F0E4F4','#A784B5'],['#FAF0D3','#C4A85A'],['#E2EEF4','#7AA2B8'],['#E9E9EC','#9296A3'],['#F3E3E3','#B97A7A'],['#E4F1EE','#6FA3A0'],['#EEE9DC','#A69465']];
+  const dark=[['#283150','#8A9BD0'],['#48302A','#D39A7A'],['#213A31','#7FBA9B'],['#3A2B44','#B995C6'],['#443C22','#D1B86A'],['#22343F','#8AB4CA'],['#2C2F37','#A0A5B3'],['#3F2A2A','#C98A8A'],['#233733','#80B3AF'],['#363024','#B8A676']];
+  const defined=new Set(['curriculum','planning','learning','content','organization','notification','identity','external','action']);
+  const ids=CTX_ORDER.filter(c=>!defined.has(c));
+  if(!ids.length) return;
+  const rule=(pal,sel)=>sel+'{'+ids.map((c,i)=>{const [f,b]=pal[i%pal.length];return `--ctx-${c}:${f};--ctx-${c}-b:${b};`;}).join('')+'}';
+  const st=document.createElement('style');
+  st.textContent=rule(light,':root')+'\n@media (prefers-color-scheme: dark){'+rule(dark,':root:not([data-theme="light"])')+'}\n'+rule(dark,':root[data-theme="dark"]');
+  document.head.appendChild(st);
+})();
+const nodes = new Map(D.nodes.map(n=>[n.id,n]));
+const actions = D.actions||[];
+actions.forEach(a=>{a.isAction=true; nodes.set(a.id,a);});
+const edges = D.edges.slice();
+actions.forEach(a=>(a.targets||[]).forEach(t=>edges.push({from:a.id,to:t,pred:a.verb||'対象',cat:'action',actionLink:true,src:(a.sources||[])[0]||''})));
+
+// ---- header
+document.getElementById('title').textContent = D.title;
+document.getElementById('subtitle').textContent = D.subtitle||'';
+document.getElementById('date').textContent = D.extractedAt;
+document.getElementById('counts').textContent = `${D.nodes.length} 概念 · ${D.edges.length} 関係` + (actions.length?` · ${actions.length} Action`:'');
+
+// ---- measure helpers
+function tw(s,size,mono){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+= c>0x2E80? size*1.0 : (mono? size*0.6 : size*0.56);}return w;}
+function nodeSize(n){
+  const nameW = tw(n.name,13.5), codeW = n.code? tw(n.code,10,true):0, eyeW = tw(n.isAction? 'ACTION' : ctxName(n.ctx),9.5)*0.9;
+  const w = Math.max(112, Math.ceil(Math.max(nameW,codeW,eyeW))+26);
+  const h = n.code? 60 : 48;
+  return {w,h};
+}
+function ctxName(id){return (D.contexts[id]||{name:id||''}).name||'';}
+
+// ---- SVG build
+const svg = document.getElementById('svg');
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs||{}){e.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(e);return e;}
+const defs = el('defs',{},svg);
+for(const cat of Object.keys(CATS).concat(['action'])){
+  const m = el('marker',{id:'m-'+cat,viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'9',markerHeight:'9',markerUnits:'userSpaceOnUse',orient:'auto-start-reverse'},defs);
+  const col = cat==='action'? 'var(--ctx-action-b)':`var(--cat-${cat})`;
+  if(cat==='is-a'){ el('path',{d:'M1,1 L9,5 L1,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else if(cat==='part-of'){ el('path',{d:'M1,5 L5,1 L9,5 L5,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else { el('path',{d:'M1,1 L9,5 L1,9 Z',fill:col},m); }
+}
+const viewport = el('g',{id:'viewport'},svg);
+const gEdges = el('g',{},viewport), gNodes = el('g',{},viewport);
+
+// node positions & sizes
+for(const n of nodes.values()){ Object.assign(n, nodeSize(n)); }
+function center(n){return {x:n.x+n.w/2,y:n.y+n.h/2};}
+function anchor(n,toward){
+  const c=center(n); const dx=toward.x-c.x, dy=toward.y-c.y;
+  if(dx===0&&dy===0) return c;
+  const sx = n.w/2/Math.abs(dx||1e-9), sy = n.h/2/Math.abs(dy||1e-9);
+  const s=Math.min(sx,sy);
+  return {x:c.x+dx*s, y:c.y+dy*s};
+}
+// group parallel edges
+const pairCount = {};
+edges.forEach(e=>{const k=[e.from,e.to].sort().join('|');pairCount[k]=(pairCount[k]||0)+1;e._k=k;});
+const pairSeen = {};
+const edgeEls = [];
+edges.forEach((e,i)=>{
+  const a=nodes.get(e.from), b=nodes.get(e.to); if(!a||!b){console.warn('missing node',e);return;}
+  const idx = (pairSeen[e._k]=(pairSeen[e._k]||0)+1);
+  const total = pairCount[e._k];
+  let k = total>1 ? (idx-1 - (total-1)/2) : 0;
+  if(e.from>e.to) k=-k;
+  const ca=center(a), cb=center(b);
+  const mx=(ca.x+cb.x)/2, my=(ca.y+cb.y)/2;
+  const len=Math.hypot(cb.x-ca.x,cb.y-ca.y)||1;
+  const nx=-(cb.y-ca.y)/len, ny=(cb.x-ca.x)/len;
+  const off = (e.bend!==undefined? e.bend : k*55);
+  const ctrl={x:mx+nx*off, y:my+ny*off};
+  const p1=anchor(a,ctrl), p2=anchor(b,ctrl);
+  const d = off===0? `M${p1.x},${p1.y} L${p2.x},${p2.y}` : `M${p1.x},${p1.y} Q${ctrl.x},${ctrl.y} ${p2.x},${p2.y}`;
+  const g = el('g',{class:'edge '+(e.actionLink?'action-link':'cat-'+e.cat),'data-i':i},gEdges);
+  el('path',{d,class:'hit'},g);
+  el('path',{d,class:'vis','marker-end':`url(#m-${e.actionLink?'action':e.cat})`},g);
+  // label at curve midpoint t=.5
+  const lx = off===0? mx : (0.25*p1.x+0.5*ctrl.x+0.25*p2.x), ly = off===0? my : (0.25*p1.y+0.5*ctrl.y+0.25*p2.y);
+  const lbl = el('g',{class:'lbl'},g);
+  const w = tw(e.pred,10.5)+10;
+  el('rect',{x:lx-w/2,y:ly-8,width:w,height:16},lbl);
+  const t = el('text',{x:lx,y:ly+3.5,'text-anchor':'middle'},lbl); t.textContent=e.pred;
+  e._el=g; edgeEls.push(g);
+});
+for(const n of nodes.values()){
+  const g = el('g',{class:'node'+(n.external?' external':'')+(n.isAction?' action':''),'data-id':n.id,transform:`translate(${n.x},${n.y})`,tabindex:'0',role:'button','aria-label':n.name},gNodes);
+  const ctx = n.isAction? 'action' : n.ctx;
+  el('rect',{class:'body',width:n.w,height:n.h,style:`fill:var(--ctx-${ctx});stroke:var(--ctx-${ctx}-b)`},g);
+  const eye = el('text',{class:'eyebrow',x:12,y:15},g); eye.textContent = n.isAction? 'ACTION' : ctxName(n.ctx);
+  const nm = el('text',{class:'name',x:12,y:n.code?35:33},g); nm.textContent=n.name;
+  if(n.code){const c=el('text',{class:'code',x:12,y:50},g); c.textContent=n.code;}
+  g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectNode(n.id);}});
+  n._el=g;
+}
+
+// ---- pan/zoom
+let tf={x:0,y:0,k:1};
+function apply(){viewport.setAttribute('transform',`translate(${tf.x},${tf.y}) scale(${tf.k})`);}
+function bbox(includeActions){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of nodes.values()){ if(n.isAction&&!includeActions) continue; x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x+n.w);y1=Math.max(y1,n.y+n.h);}
+  return {x0,y0,x1,y1};
+}
+function fit(){
+  const r=svg.getBoundingClientRect(); const b=bbox(showActions);
+  const pad=40; const bw=b.x1-b.x0+pad*2, bh=b.y1-b.y0+pad*2;
+  const k=Math.min(r.width/bw, r.height/bh, 1.6);
+  tf={k, x:(r.width-(b.x1-b.x0)*k)/2 - b.x0*k, y:(r.height-(b.y1-b.y0)*k)/2 - b.y0*k};
+  apply();
+}
+function zoomAt(f,cx,cy){const nk=Math.max(.25,Math.min(3,tf.k*f));const r=nk/tf.k;tf={k:nk,x:cx-(cx-tf.x)*r,y:cy-(cy-tf.y)*r};apply();}
+svg.addEventListener('wheel',ev=>{ev.preventDefault();const r=svg.getBoundingClientRect();zoomAt(ev.deltaY<0?1.12:1/1.12,ev.clientX-r.left,ev.clientY-r.top);},{passive:false});
+let drag=null;
+svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;drag={x:ev.clientX,y:ev.clientY,tx:tf.x,ty:tf.y,moved:false,target:ev.target};svg.setPointerCapture(ev.pointerId);});
+svg.addEventListener('pointermove',ev=>{if(!drag)return;const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3){drag.moved=true;svg.classList.add('dragging');}tf.x=drag.tx+dx;tf.y=drag.ty+dy;apply();});
+svg.addEventListener('pointerup',ev=>{if(drag&&!drag.moved){const t=drag.target;const gn=t.closest&&t.closest('.node');const ge=t.closest&&t.closest('.edge');if(gn){selectNode(gn.dataset.id);}else if(ge){selectEdge(Number(ge.dataset.i));}else{clearSelection();}}drag=null;svg.classList.remove('dragging');});
+document.getElementById('zin').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1.25,r.width/2,r.height/2);};
+document.getElementById('zout').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1/1.25,r.width/2,r.height/2);};
+document.getElementById('zfit').onclick=fit;
+window.addEventListener('resize',fit);
+
+// ---- legend
+// 凡例は畳める。ブログの iframe のように描画領域が低いときは畳んだ状態で始める
+const legendEl=document.getElementById('legend'), legendToggle=document.getElementById('legendToggle');
+function setLegend(open){legendEl.classList.toggle('collapsed',!open);legendToggle.setAttribute('aria-expanded',String(open));}
+legendToggle.addEventListener('click',()=>setLegend(legendEl.classList.contains('collapsed')));
+setLegend(document.getElementById('stage').clientHeight>=900);
+const catsEl=document.getElementById('cats');
+const hiddenCats=new Set();
+for(const [id,c] of Object.entries(CATS)){
+  const lab=document.createElement('label');
+  lab.innerHTML=`<input type="checkbox" checked data-cat="${id}"><span class="sw${id==='relates-to'?' dotted':''}" style="color:var(--cat-${id})"></span><span><span class="cat-name mono">${c.name}</span><br><span class="cat-desc">${c.desc}</span></span>`;
+  lab.querySelector('input').addEventListener('change',ev=>{ev.target.checked?hiddenCats.delete(id):hiddenCats.add(id);refreshVisibility();});
+  catsEl.appendChild(lab);
+}
+const ctxsEl=document.getElementById('ctxs');
+const usedCtx=new Set(D.nodes.map(n=>n.ctx));
+CTX_ORDER.filter(c=>usedCtx.has(c)).forEach(c=>{const s=document.createElement('span');s.className='ctx';s.innerHTML=`<i style="background:var(--ctx-${c});border-color:var(--ctx-${c}-b)"></i>${ctxName(c)}`;ctxsEl.appendChild(s);});
+let showActions=false;
+if(actions.length){document.getElementById('actionToggle').hidden=false;document.getElementById('showActions').addEventListener('change',ev=>{showActions=ev.target.checked;refreshVisibility();fit();if(!selected)renderQuestions();});}
+function refreshVisibility(){
+  edges.forEach(e=>{ if(!e._el) return; const hide = e.actionLink? !showActions : hiddenCats.has(e.cat); e._el.classList.toggle('hidden',hide);});
+  actions.forEach(a=>a._el.classList.toggle('hidden',!showActions));
+}
+
+// ---- selection / detail
+let selected=null;
+const body=document.getElementById('body');
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function setTab(name){tabs.forEach(t=>t.setAttribute('aria-selected',String(t.dataset.tab===name)));}
+tabs.forEach(t=>t.addEventListener('click',()=>{setTab(t.dataset.tab);if(t.dataset.tab==='questions')renderQuestions();else if(t.dataset.tab==='sources')renderSources();else renderDetail();}));
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function li(items){return (items||[]).map(it=>typeof it==='string'?`<li>${esc(it)}</li>`:`<li class="${it.inferred?'inf':''}">${esc(it.t)}</li>`).join('');}
+function catBadge(cat){return `<span class="cat mono" style="background:var(--cat-${cat})">${cat}</span>`;}
+function clearSelection(){selected=null;[...gNodes.children].forEach(g=>g.classList.remove('dim','selected'));edgeEls.forEach(g=>g.classList.remove('dim','selected'));}
+function highlightNode(id){
+  const nb=new Set([id]); edges.forEach(e=>{if(e.from===id)nb.add(e.to);if(e.to===id)nb.add(e.from);});
+  [...gNodes.children].forEach(g=>{g.classList.toggle('dim',!nb.has(g.dataset.id));g.classList.toggle('selected',g.dataset.id===id);});
+  edges.forEach(e=>{if(!e._el)return;e._el.classList.toggle('dim',!(e.from===id||e.to===id));e._el.classList.remove('selected');});
+}
+function selectNode(id){
+  const n=nodes.get(id); if(!n) return; selected={type:'node',id};
+  if(n.isAction&&!showActions){showActions=true;document.getElementById('showActions').checked=true;refreshVisibility();}
+  highlightNode(id); setTab('detail'); renderDetail();
+}
+function selectEdge(i){
+  const e=edges[i]; selected={type:'edge',i};
+  [...gNodes.children].forEach(g=>g.classList.toggle('dim',!(g.dataset.id===e.from||g.dataset.id===e.to)));
+  edges.forEach((x,j)=>{if(!x._el)return;x._el.classList.toggle('dim',j!==i);x._el.classList.toggle('selected',j===i);});
+  setTab('detail'); renderDetail();
+}
+function nodeLink(id){const n=nodes.get(id);return `<span class="other" data-go="${id}">${esc(n?n.name:id)}</span>`;}
+function renderDetail(){
+  if(!selected){body.innerHTML=`<p class="hint">図の概念（箱）または関係名（線上のラベル）をクリックすると、定義・別名・属性・制約・関係・出典をここに表示する。</p>`;return;}
+  if(selected.type==='edge'){
+    const e=edges[selected.i];
+    body.innerHTML=`<div class="ctx-chip">関係</div><h2>${esc(nodes.get(e.from).name)} <span style="color:var(--muted)">→</span> ${esc(nodes.get(e.to).name)}</h2>
+      <p><b>${esc(e.pred)}</b> ${e.actionLink?'<span class="cat mono" style="background:var(--ctx-action-b)">action</span>':catBadge(e.cat)}</p>
+      ${e.note?`<div class="note">${esc(e.note)}</div>`:''}
+      <h3>出典</h3><ul class="src-list"><li>${esc(e.src||'—')}</li></ul>
+      <h3>両端</h3><div class="rel"><span class="dir">from</span><span>${nodeLink(e.from)}</span></div><div class="rel"><span class="dir">to</span><span>${nodeLink(e.to)}</span></div>`;
+    bindLinks();return;
+  }
+  const n=nodes.get(selected.id);
+  if(n.isAction){renderAction(n);return;}
+  const out=edges.filter(e=>e.from===n.id&&!e.actionLink), inc=edges.filter(e=>e.to===n.id&&!e.actionLink);
+  const acts=edges.filter(e=>e.to===n.id&&e.actionLink).map(e=>nodes.get(e.from));
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-${n.ctx});border-color:var(--ctx-${n.ctx}-b)"></i>${esc(ctxName(n.ctx))}${n.external?' · このスライスでは外部参照':''}</div>
+    <h2>${esc(n.name)}</h2>
+    ${n.code?`<div class="mono" style="color:var(--muted)">${esc(n.code)}</div>`:''}
+    <p>${esc(n.def)}</p>
+    ${n.note?`<div class="note">${esc(n.note)}</div>`:''}
+    ${(n.aliases||[]).length?`<h3>別名・ソース上の名称</h3><div class="aliases">${n.aliases.map(a=>`<span class="${/^[\x20-\x7e]+$/.test(a)?'code':''}">${esc(a)}</span>`).join('')}</div>`:''}
+    ${(n.props||[]).length?`<h3>主要な属性</h3><ul class="plain">${li(n.props)}</ul>`:''}
+    ${(n.constraints||[]).length?`<h3>制約</h3><ul class="plain">${li(n.constraints)}</ul>`:''}
+    <h3>関係（${out.length+inc.length}）</h3>
+    ${out.map(e=>`<div class="rel"><span class="dir">→</span><span><span class="pred">${esc(e.pred)}</span> ${nodeLink(e.to)} ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${inc.map(e=>`<div class="rel"><span class="dir">←</span><span>${nodeLink(e.from)} が <span class="pred">${esc(e.pred)}</span> ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${acts.length?`<h3>この概念を対象にする Action</h3>${acts.map(a=>`<div class="rel"><span class="dir">⚙</span><span>${nodeLink(a.id)}</span></div>`).join('')}`:''}
+    <h3>出典</h3><ul class="src-list">${(n.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function renderAction(a){
+  const pol=a.policy;
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-action);border-color:var(--ctx-action-b)"></i>Action${a.status?` · ${esc(a.status)}`:''}</div>
+    <h2>${esc(a.name)}</h2>${a.code?`<div class="mono" style="color:var(--muted)">${esc(a.code)}</div>`:''}
+    <p>${esc(a.def||'')}</p>
+    <h3>対象概念</h3><div class="aliases">${(a.targets||[]).map(t=>`<span>${nodeLink(t)}</span>`).join('')}</div>
+    <h3>事前条件</h3><ul class="plain">${li(a.pre)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>効果</h3><ul class="plain">${li(a.effects)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>Policy</h3>${pol?`<div class="pol"><div class="who">${esc(pol.actor)}</div><div>${esc(pol.rule)}</div><dl class="kv" style="margin:6px 0 0"><dt>承認</dt><dd>${esc(pol.approval||'ソースに記載なし')}</dd></dl><ul class="src-list" style="margin-top:6px">${(pol.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`:`<p class="hint">ソースに記載なし</p>`}
+    <h3>出典</h3><ul class="src-list">${(a.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function bindLinks(){body.querySelectorAll('[data-go]').forEach(s=>s.addEventListener('click',()=>selectNode(s.dataset.go)));}
+function renderQuestions(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">この図が答えるために切り出した問い。判定は「ソースから答えられるか」。概念名を押すと図で強調する。</p>
+  ${D.questions.map((q,i)=>`<div class="q"><span class="verdict ${q.answerable}">${{yes:'ソースから答えられる',partial:'一部のみ答えられる',no:'ソースに記載なし'}[q.answerable]}</span><p class="qt">Q${i+1}. ${esc(q.q)}</p><div class="ans">${q.answer.map(p=>`<p>${esc(p)}</p>`).join('')}</div><div class="path">${(q.path||[]).map(id=>`<button data-go="${id}">${esc((nodes.get(id)||{name:id}).name)}</button>`).join('')}</div></div>`).join('')}
+  ${actions.length?`<h3>Action / Policy（${actions.length}）</h3><p class="hint">凡例の「Action / Policy を重ねる」で図に重ねられる。</p>${actions.map(a=>`<div class="action-card" data-go="${a.id}"><b>${esc(a.name)}</b><span class="st">${esc(a.status||'')}${a.policy?` · Policy: ${esc(a.policy.actor)}`:' · Policy: ソースに記載なし'}</span></div>`).join('')}`:''}
+  ${D.scopeNote?`<h3>スコープ外</h3><p style="font-size:12.5px">${esc(D.scopeNote)}</p>`:''}`;
+  body.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>selectNode(b.dataset.go)));
+}
+function renderSources(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">抽出日 ${esc(D.extractedAt)} 時点のスナップショット。以下を読んで抽出した。パスは ${esc(D.repoRoot||'リポジトリ')} 直下からの相対。</p>
+  <ul class="src-list" style="font-size:12px">${D.sources.map(s=>`<li style="margin:6px 0"><span style="color:var(--ink);font-family:'Zen Kaku Gothic New',sans-serif">${esc(s.label)}</span><br>${esc(s.path)}</li>`).join('')}</ul>
+  <h3>名寄せのメモ</h3><ul class="plain" style="font-size:12.5px">${(D.identityNotes||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+svg.addEventListener('click',()=>{});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){clearSelection();setTab('questions');renderQuestions();}});
+
+refreshVisibility(); renderQuestions(); requestAnimationFrame(fit);
+})();
+</script>

@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  input-ontology-map skill の共通描画テンプレート。build.mjs が TITLE と DATA_JSON のプレースホルダ（二重波括弧）を差し込む。
+  書き直さないこと。過去に再発したバグとその対策:
+  - このコメント内にプレースホルダの文字列をそのまま書かない。String.replace が先頭一致でコメント側を置換し、<title> と data script が未置換のまま出た（JSON.parse が position 1 で失敗）
+  - Action ノードは ctx を持たない。幅計算・ラベル描画は n.isAction を先に見る（ctxName(undefined) で例外になり描画全体が止まった）
+  - ドラッグ用の setPointerCapture を SVG にかけると click の宛先が SVG になり、ノードの click ハンドラが呼ばれない。
+    選択は pointerup で pointerdown 時の target を closest('.node' / '.edge') して判定する
+  - ctx の色は CSS 変数 --ctx-<id> / --ctx-<id>-b で引く。既定名以外の ctx id は assignCtxColors がパレットから自動付与する（未定義だと箱が透明になった）
+  - 凡例は #legendToggle で畳める。描画領域の高さが 900px 未満なら畳んだ状態で始める(ブログの iframe で凡例が図を覆った)
+  - 当たり判定用 path.hit は `.edge path.hit{stroke:transparent!important}` で明示的に打ち消す（カテゴリ色の指定に負けて太線になった）
+-->
+<meta charset="utf-8">
+<title>AWS VPC 概念図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F8; --surface:#FFFFFF; --surface-2:#EBEDF2; --ink:#1B1F2A; --muted:#5D6375; --line:#D6DAE3; --line-strong:#B9BFCC;
+  --accent:#3B4C7A; --accent-ink:#FFFFFF; --focus:#3B6FD1;
+  --ctx-curriculum:#E3E8F6; --ctx-curriculum-b:#7A8BBE;
+  --ctx-planning:#FBE6DA; --ctx-planning-b:#C98868;
+  --ctx-learning:#DFF0E7; --ctx-learning-b:#6FA88A;
+  --ctx-content:#F0E4F4; --ctx-content-b:#A784B5;
+  --ctx-organization:#FAF0D3; --ctx-organization-b:#C4A85A;
+  --ctx-notification:#E2EEF4; --ctx-notification-b:#7AA2B8;
+  --ctx-identity:#E9E9EC; --ctx-identity-b:#9296A3;
+  --ctx-external:#F4F5F8; --ctx-external-b:#A6ABB8;
+  --ctx-action:#FFF7E0; --ctx-action-b:#B58A1E;
+  --cat-is-a:#7B61B8; --cat-part-of:#2C8C7A; --cat-depends-on:#3B6FD1; --cat-produces:#3F9A4B; --cat-constrains:#D0532B; --cat-relates-to:#7F8592;
+  --ok:#2F8A4C; --warn:#B8791C; --ng:#B94A3A;
+  --shadow:0 1px 2px rgba(20,24,36,.06),0 6px 20px rgba(20,24,36,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+    --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+    --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+    --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+    --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+    --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+    --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+    --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+    --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+    --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+    --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+    --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+    --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#15181F; --surface:#1E222C; --surface-2:#262B37; --ink:#E7E9EF; --muted:#9AA1B4; --line:#333947; --line-strong:#4A5164;
+  --accent:#A9B8E4; --accent-ink:#15181F; --focus:#7FA3EE;
+  --ctx-curriculum:#283150; --ctx-curriculum-b:#8A9BD0;
+  --ctx-planning:#48302A; --ctx-planning-b:#D39A7A;
+  --ctx-learning:#213A31; --ctx-learning-b:#7FBA9B;
+  --ctx-content:#3A2B44; --ctx-content-b:#B995C6;
+  --ctx-organization:#443C22; --ctx-organization-b:#D1B86A;
+  --ctx-notification:#22343F; --ctx-notification-b:#8AB4CA;
+  --ctx-identity:#2C2F37; --ctx-identity-b:#A0A5B3;
+  --ctx-external:#1B1E27; --ctx-external-b:#6E7484;
+  --ctx-action:#3E3520; --ctx-action-b:#D8B04A;
+  --cat-is-a:#A78FE0; --cat-part-of:#5DBBA8; --cat-depends-on:#7FA3EE; --cat-produces:#6EC27C; --cat-constrains:#F07B55; --cat-relates-to:#9AA1B4;
+  --ok:#6EC27C; --warn:#E0B159; --ng:#EE7B6E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.55;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em}
+header{display:flex;align-items:baseline;gap:20px;padding:12px 20px 10px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+header h1{font-family:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;font-weight:600;font-size:21px;letter-spacing:.02em;margin:0;text-wrap:balance}
+header .sub{color:var(--muted);font-size:13px}
+header .meta{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--muted);font-size:12px}
+header .meta .tag{border:1px solid var(--line);border-radius:3px;padding:1px 7px;font-family:"IBM Plex Mono",monospace;font-size:11px}
+main{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;min-width:0;background:var(--paper)}
+#stage svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#stage svg.dragging{cursor:grabbing}
+.grid{stroke:var(--line);stroke-opacity:.55}
+.node rect.body{stroke-width:1.2;rx:5;ry:5;transition:opacity .15s}
+.node text{pointer-events:none}
+.node .eyebrow{font-size:9.5px;letter-spacing:.08em;fill:var(--muted);font-weight:500}
+.node .name{font-size:13.5px;font-weight:700;fill:var(--ink)}
+.node .code{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.node{cursor:pointer}
+.node.dim{opacity:.22}
+.node.selected rect.body{stroke-width:2.4;filter:drop-shadow(0 0 0 transparent)}
+.node.external rect.body{stroke-dasharray:4 3}
+.node.action rect.body{rx:16;ry:16;stroke-dasharray:2 2.5}
+.edge path{fill:none;stroke-width:1.5;transition:opacity .15s}
+.edge.cat-is-a path{stroke:var(--cat-is-a)}
+.edge.cat-part-of path{stroke:var(--cat-part-of)}
+.edge.cat-depends-on path{stroke:var(--cat-depends-on)}
+.edge.cat-produces path{stroke:var(--cat-produces)}
+.edge.cat-constrains path{stroke:var(--cat-constrains)}
+.edge.cat-relates-to path{stroke:var(--cat-relates-to);stroke-dasharray:3 3}
+.edge.action-link path{stroke:var(--ctx-action-b);stroke-dasharray:1.5 3;stroke-width:1.3}
+.edge path.hit{stroke:transparent!important;stroke-width:10;stroke-dasharray:none!important;cursor:pointer}
+.edge .lbl rect{fill:var(--paper);stroke:none;rx:3;ry:3;fill-opacity:.92}
+.edge .lbl text{font-size:10.5px;font-weight:500;paint-order:stroke}
+.edge.cat-is-a .lbl text{fill:var(--cat-is-a)}
+.edge.cat-part-of .lbl text{fill:var(--cat-part-of)}
+.edge.cat-depends-on .lbl text{fill:var(--cat-depends-on)}
+.edge.cat-produces .lbl text{fill:var(--cat-produces)}
+.edge.cat-constrains .lbl text{fill:var(--cat-constrains)}
+.edge.cat-relates-to .lbl text{fill:var(--cat-relates-to)}
+.edge.action-link .lbl text{fill:var(--ctx-action-b)}
+.edge .lbl{cursor:pointer}
+.edge.dim{opacity:.1}
+.edge.hidden,.node.hidden{display:none}
+.edge.selected path.vis{stroke-width:2.6}
+/* overlays */
+.panel-float{position:absolute;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);font-size:12px}
+#legend{left:14px;bottom:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;max-width:300px}
+#legend .h{font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;font-weight:500;margin-bottom:2px}
+#legend .cats{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+#legend label{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding:2px 0}
+#legend label input{margin:0;accent-color:var(--accent)}
+#legend .sw{width:22px;height:0;border-top:2px solid;flex:none;position:relative}
+#legend .sw.dotted{border-top-style:dashed}
+#legend .sw::after{content:"";position:absolute;right:-1px;top:-4px;border:3px solid transparent;border-left:5px solid currentColor}
+#legend .cat-name{color:var(--ink)}
+#legend .cat-desc{color:var(--muted);font-size:10.5px}
+#legend .ctxs{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:2px}
+#legend .ctx{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:11px}
+#legend .ctx i{width:11px;height:11px;border-radius:2px;border:1px solid;display:inline-block}
+#legend hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#legendToggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;font:inherit}
+#legendToggle .h{margin:0;white-space:nowrap}
+#legendToggle .chev{flex:none;width:16px!important;height:16px!important;color:var(--ink);transition:transform .15s}
+#legend.collapsed #legendBody{display:none}
+#legend.collapsed #legendToggle .chev{transform:rotate(-90deg)}
+#legend.collapsed #actionToggle hr{display:none}
+#legendBody{display:flex;flex-direction:column;gap:6px}
+#zoom{right:14px;top:14px;display:flex;flex-direction:column}
+#zoom button{width:32px;height:30px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;cursor:pointer;font-family:inherit}
+#zoom button:last-child{border-bottom:0}
+#zoom button:hover{background:var(--surface-2)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* detail panel */
+aside{width:400px;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0}
+aside .tabs{display:flex;border-bottom:1px solid var(--line)}
+aside .tabs button{flex:1;padding:10px 6px;border:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+aside .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+aside .body{overflow:auto;padding:16px 18px 24px;flex:1}
+aside h2{font-family:"Shippori Mincho B1",serif;font-weight:600;font-size:19px;margin:0 0 2px;line-height:1.3;text-wrap:balance}
+aside h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:500}
+aside p{margin:6px 0}
+.ctx-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px}
+.ctx-chip i{width:10px;height:10px;border-radius:2px;border:1px solid;display:inline-block}
+.aliases{display:flex;flex-wrap:wrap;gap:5px}
+.aliases span{background:var(--surface-2);border-radius:3px;padding:1px 7px;font-size:11.5px}
+.aliases span.code{font-family:"IBM Plex Mono",monospace;font-size:11px}
+ul.plain{margin:0;padding-left:18px}
+ul.plain li{margin:3px 0}
+li.inf{color:var(--muted)}
+li.inf::after{content:" 推定";font-size:10px;border:1px solid var(--line-strong);border-radius:3px;padding:0 4px;margin-left:5px;vertical-align:middle}
+.rel{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+.rel:last-child{border-bottom:0}
+.rel .dir{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted)}
+.rel .pred{font-weight:700}
+.rel .cat{font-family:"IBM Plex Mono",monospace;font-size:10.5px;border-radius:3px;padding:0 5px;color:var(--paper);margin-left:6px;vertical-align:middle}
+.rel .other{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.rel .other:hover{color:var(--accent)}
+.rel .src{grid-column:2;font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;word-break:break-all}
+.src-list{margin:0;padding-left:0;list-style:none}
+.src-list li{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin:3px 0;word-break:break-all}
+.note{background:var(--surface-2);border-radius:4px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.q{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin:0 0 12px}
+.q .qt{font-weight:700;font-size:14px;margin:0 0 6px;text-wrap:balance}
+.q .ans{font-size:12.5px}
+.q .verdict{display:inline-block;font-size:11px;border-radius:3px;padding:1px 7px;margin-bottom:6px;color:#fff}
+.q .verdict.yes{background:var(--ok)}.q .verdict.partial{background:var(--warn)}.q .verdict.no{background:var(--ng)}
+.q .path{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.q .path button{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:3px;font-family:inherit;font-size:11.5px;padding:1px 7px;cursor:pointer}
+.q .path button:hover{background:var(--surface-2)}
+.hint{color:var(--muted);font-size:12px}
+.action-card{border:1px dashed var(--ctx-action-b);border-radius:6px;padding:10px 12px;margin:0 0 10px;cursor:pointer}
+.action-card:hover{background:var(--surface-2)}
+.action-card b{display:block}
+.action-card .st{font-size:11px;color:var(--muted)}
+.pol{border-left:3px solid var(--ctx-action-b);padding:6px 10px;background:var(--surface-2);border-radius:0 4px 4px 0;margin:6px 0}
+.pol .who{font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+.kv dt{color:var(--muted)}.kv dd{margin:0}
+@media (max-width:900px){main{flex-direction:column}aside{width:auto;height:45%;border-left:0;border-top:1px solid var(--line)}#legend{max-width:240px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <h1 id="title"></h1>
+  <span class="sub" id="subtitle"></span>
+  <div class="meta">
+    <span>抽出日 <span class="tag" id="date"></span></span>
+    <span id="counts"></span>
+  </div>
+</header>
+<main>
+  <div id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="概念マップ"></svg>
+    <div id="legend" class="panel-float">
+      <button id="legendToggle" type="button" aria-expanded="true" aria-controls="legendBody"><span class="h">凡例</span><svg class="chev" aria-hidden="true" viewBox="0 0 16 16" width="16" height="16"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="legendBody">
+      <div class="h">関係カテゴリ（クリックで表示切替）</div>
+      <div class="cats" id="cats"></div>
+      <hr>
+      <div class="h">コンテキスト</div>
+      <div class="ctxs" id="ctxs"></div>
+      </div>
+      <div id="actionToggle" hidden><hr><label><input type="checkbox" id="showActions"> <span class="cat-name">Action / Policy を重ねる</span></label></div>
+    </div>
+    <div id="zoom" class="panel-float">
+      <button id="zin" title="拡大" aria-label="拡大">＋</button>
+      <button id="zout" title="縮小" aria-label="縮小">－</button>
+      <button id="zfit" title="全体表示" aria-label="全体表示">⊡</button>
+    </div>
+  </div>
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="questions">問い</button>
+      <button role="tab" aria-selected="false" data-tab="detail">詳細</button>
+      <button role="tab" aria-selected="false" data-tab="sources">ソース</button>
+    </div>
+    <div class="body" id="body"></div>
+  </aside>
+</main>
+
+<script id="data" type="application/json">{"title":"AWS VPC 概念図","subtitle":"サブネット・ルートテーブル・ゲートウェイ・エンドポイントと、セキュリティグループ / ネットワーク ACL","extractedAt":"2026-10-18","repoRoot":"AWS 公式ドキュメント(docs.aws.amazon.com)","contexts":{"place":{"name":"場所と範囲"},"route":{"name":"経路"},"guard":{"name":"通信の制御"},"res":{"name":"リソース"}},"sources":[{"label":"Amazon VPC の仕組み","path":"https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html"},{"label":"サブネットとサブネットの種類","path":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"label":"VPC の CIDR ブロック","path":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html"},{"label":"インターネットゲートウェイ","path":"https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"},{"label":"NAT ゲートウェイ","path":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html"},{"label":"NAT ゲートウェイと NAT インスタンスの比較","path":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"},{"label":"ゲートウェイ型エンドポイント","path":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"label":"PrivateLink とインターフェイス型エンドポイント","path":"https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html"},{"label":"セキュリティグループ","path":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"},{"label":"ネットワーク ACL","path":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"},{"label":"セキュリティグループとネットワーク ACL の比較","path":"https://docs.aws.amazon.com/vpc/latest/userguide/infrastructure-security.html"},{"label":"ネットワークインターフェイス(ENI)","path":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html"},{"label":"リージョンとゾーン","path":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"},{"label":"Fargate のタスクネットワーク","path":"https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-networking.html"}],"identityNotes":["「NAT ゲートウェイ」と「NAT インスタンス」は別物。前者は AWS が管理し、後者は NAT 用に設定した EC2 インスタンスを自分で管理する。ドキュメントは両方を「NAT デバイス」と総称する(vpc-nat-comparison)","「VPC エンドポイント」と「PrivateLink」は同じではない。インターフェイス型エンドポイントは PrivateLink を使うが、ゲートウェイ型エンドポイントは PrivateLink を使わない(gateway-endpoints)","「Elastic Network Interface(ENI)」と「ネットワークインターフェイス」は同じもの。コンソールと EC2 API では network interface と呼ぶ(using-eni)","「パブリックサブネット」「プライベートサブネット」は別の種類の資源ではなく、関連付けたルートテーブルにインターネットゲートウェイへの直接ルートがあるかで呼び分ける(configure-subnets、VPC_Internet_Gateway)"],"scopeNote":"IPv6・Egress-only IGW・Transit Gateway・VPC ピアリング・Site-to-Site VPN・Local Zones・フローログは含めない。NAT ゲートウェイはパブリック型だけを扱う。","questions":[{"q":"プライベートサブネットの ECS タスク(Fargate)は、どの経路で S3 に届くか","answerable":"yes","answer":["経路 1: サブネットのルートテーブルで 0.0.0.0/0 を NAT ゲートウェイに向ける。NAT ゲートウェイはパブリックサブネットにあり、インターネットゲートウェイを通って S3 の公開エンドポイントへ届く。通信はインターネットゲートウェイを通るが AWS のネットワークの外には出ない(gateway-endpoints)。","経路 2: S3 のゲートウェイ型エンドポイントを作り、ルートテーブルに関連付ける。S3 のプレフィックスリスト宛てのルートが自動で入り、最長一致で 0.0.0.0/0 より優先されるので、同じリージョンの S3 宛ての通信はエンドポイントを通る。どちらの経路でも、タスクの ENI に付くセキュリティグループとサブネットのネットワーク ACL が S3 宛ての通信を許可している必要がある。"],"path":["ecsTask","eni","privateSubnet","routeTable","nat","igw","gwEndpoint","prefixList","s3"]},{"q":"セキュリティグループとネットワーク ACL は何が違うか","answerable":"yes","answer":["セキュリティグループはインスタンス(ENI)単位で付き、許可ルールだけを持ち、全ルールを見てから判断し、戻りの通信を自動で通す(ステートフル)。","ネットワーク ACL はサブネット単位で付き、許可と拒否の両方を持ち、番号の小さいルールから順に評価して最初の一致で決め、戻りの通信も明示的に許可しないと通さない(ステートレス)(infrastructure-security の比較表)。"],"path":["sg","eni","nacl","subnet"]},{"q":"パブリックサブネットとプライベートサブネットを分けるものは何か","answerable":"yes","answer":["関連付けたルートテーブルに、インターネットゲートウェイへの直接ルートがあるかどうか。あればパブリック、なければプライベートと呼ぶ。","プライベートサブネットのリソースがインターネットへ出るには NAT デバイスが要る。パブリックサブネットでも、リソースがインターネットと通信するにはパブリック IPv4 アドレスか Elastic IP が要る(VPC_Internet_Gateway)。"],"path":["publicSubnet","privateSubnet","routeTable","igw","natDevice","eip"]}],"nodes":[{"id":"region","ctx":"place","name":"リージョン","code":"Region","x":40,"y":40,"def":"地理的に分かれた領域。リージョン同士は互いに隔離され、リソースは自動では複製されない。","sources":["https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"]},{"id":"az","ctx":"place","name":"アベイラビリティゾーン","code":"Availability Zone","x":40,"y":190,"def":"リージョンの中にある、互いに隔離された複数の場所。コードはリージョンコードに英字を付けたもの(例 us-east-1a)。","aliases":["AZ"],"sources":["https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"]},{"id":"vpc","ctx":"place","name":"VPC","code":"virtual private cloud","x":320,"y":40,"def":"AWS アカウント専用の仮想ネットワーク。ほかの仮想ネットワークから論理的に隔離される。","props":["リージョンを選んで作り、そのリージョンの AZ にまたがる(リージョンとゾーンの図の説明)","デフォルト VPC は IGW と、全通信を IGW へ向けるメインルートテーブルを最初から持つ"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html","https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"]},{"id":"cidr","ctx":"place","name":"CIDR ブロック","code":"CIDR block","x":320,"y":190,"def":"VPC やサブネットの IP アドレス範囲を CIDR 表記で表したもの。","constraints":["VPC の IPv4 CIDR は /16 から /28 まで","VPC に付けた CIDR どうしは重ねられない","既存の CIDR の大きさは後から変えられない"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html"]},{"id":"subnet","ctx":"place","name":"サブネット","code":"subnet","x":320,"y":340,"def":"VPC の中の IP アドレス範囲。EC2 インスタンスなどのリソースはサブネットに起動する。","constraints":["1 つの AZ に完全に収まり、AZ をまたげない","必ず 1 つのルートテーブルと 1 つのネットワーク ACL に関連付く"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html","https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html","https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"]},{"id":"publicSubnet","ctx":"place","name":"パブリックサブネット","code":"public subnet","x":40,"y":490,"def":"インターネットゲートウェイへの直接ルートを持つルートテーブルに関連付いたサブネット。","sources":["https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html","https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"]},{"id":"privateSubnet","ctx":"place","name":"プライベートサブネット","code":"private subnet","x":320,"y":490,"def":"インターネットゲートウェイへの直接ルートを持たないサブネット。インターネットへ出るには NAT デバイスが要る。","sources":["https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html","https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"]},{"id":"routeTable","ctx":"route","name":"ルートテーブル","code":"route table","x":600,"y":340,"def":"通信の行き先を決めるルートの集まり。各ルートは宛先の IP 範囲と、送り先(ゲートウェイ・ENI・接続)を持つ。","aliases":["メインルートテーブル(明示的に関連付けないサブネットが使うもの)"],"props":["宛先が VPC の CIDR、送り先が local のルートが自動で入る","一致するルートのうち最も細かいもの(最長一致)を使う"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html","https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html","https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]},{"id":"igw","ctx":"route","name":"インターネットゲートウェイ","code":"internet gateway","x":600,"y":40,"def":"VPC とインターネットの間の通信を通す VPC の部品。IPv4 では 1 対 1 のアドレス変換も行う。","aliases":["IGW"],"constraints":["使うには VPC にアタッチし、ルートを設定する"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"]},{"id":"natDevice","ctx":"route","name":"NAT デバイス","code":"NAT device","x":880,"y":190,"def":"プライベートサブネットのリソースが外へ接続を始められるようにし、外からの接続は受けない仕組みの総称。","sources":["https://docs.aws.amazon.com/vpc/latest/userguide/how-it-works.html","https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"]},{"id":"nat","ctx":"route","name":"NAT ゲートウェイ","code":"NAT gateway","x":880,"y":340,"def":"AWS が管理する NAT のサービス。パブリック型はプライベートサブネットからインターネットへの通信を通す。","props":["接続の種類: パブリック(既定)/ プライベート"],"constraints":["パブリック型はパブリックサブネットに作り、作成時に Elastic IP を関連付ける","接続は常に VPC の内側から始める","セキュリティグループは付けられない"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html","https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"]},{"id":"natInstance","ctx":"route","name":"NAT インスタンス","code":"NAT instance","x":1160,"y":190,"def":"NAT 用に設定した AMI から起動し、自分で管理する EC2 インスタンス。AWS は NAT ゲートウェイへの置き換えを勧めている。","sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"]},{"id":"eip","ctx":"route","name":"Elastic IP アドレス","code":"Elastic IP","x":1160,"y":340,"def":"NAT ゲートウェイや ENI のプライベート IPv4 アドレスに関連付ける、固定のパブリック IPv4 アドレス。","aliases":["EIP"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html","https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html"]},{"id":"vpcEndpoint","ctx":"route","name":"VPC エンドポイント","code":"VPC endpoint","x":880,"y":490,"def":"インターネットゲートウェイや NAT デバイスを通さずに AWS のサービスへ接続するための入口。","sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html","https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]},{"id":"gwEndpoint","ctx":"route","name":"ゲートウェイ型エンドポイント","code":"gateway endpoint","x":600,"y":640,"def":"ルートテーブルのルートで S3 と DynamoDB への通信を受けるエンドポイント。PrivateLink は使わない。","constraints":["対応するのは S3 と DynamoDB だけ","プレフィックスリストはリージョンごとなので、別リージョンの S3 宛ては通らない","1 つのルートテーブルに同じサービスへのエンドポイントルートは 1 つまで","追加料金はかからない"],"sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]},{"id":"ifEndpoint","ctx":"route","name":"インターフェイス型エンドポイント","code":"interface VPC endpoint","x":880,"y":640,"def":"サブネットに作る ENI を入口にして、PrivateLink で AWS のサービスへ接続するエンドポイント。","aliases":["AWS PrivateLink の VPC エンドポイント"],"props":["プライベート DNS を有効にすると、サービスの公開 DNS 名がエンドポイントの ENI のアドレスに解決される"],"constraints":["AZ ごとに 1 つのサブネットを選ぶ","AZ ごとの時間と処理量に料金がかかる"],"sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html"]},{"id":"prefixList","ctx":"route","name":"プレフィックスリスト","code":"prefix list","x":600,"y":790,"def":"サービスの IP アドレス範囲をまとめた、AWS が管理するリスト。ゲートウェイ型エンドポイントのルートの宛先になる。","constraints":["ネットワーク ACL のルールでは参照できない(範囲を書き写す)"],"sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]},{"id":"sg","ctx":"guard","name":"セキュリティグループ","code":"security group","x":1160,"y":640,"def":"関連付けたリソースに出入りできる通信を許可ルールで決める仮想ファイアウォール。","props":["ステートフル: 許可した通信への応答は自動で通る","許可ルールのみ","全ルールを評価してから判断する","別のセキュリティグループをルールで参照できる"],"constraints":["名前は VPC 内で一意","1 つのリソースに複数付けられる"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html","https://docs.aws.amazon.com/vpc/latest/userguide/infrastructure-security.html"]},{"id":"nacl","ctx":"guard","name":"ネットワーク ACL","code":"network ACL","x":40,"y":640,"def":"サブネットに出入りする通信を許可・拒否するルールの集まり。","aliases":["NACL","network access control list"],"props":["ステートレス: 応答も明示的に許可が要る","許可と拒否の両方","ルール番号の小さい順に評価し、最初に一致したルールで決める","既定のネットワーク ACL は全通信を許可する"],"constraints":["1 つのサブネットに同時に付くのは 1 つだけ","サブネットの中を流れる通信は評価しない"],"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html","https://docs.aws.amazon.com/vpc/latest/userguide/infrastructure-security.html"]},{"id":"eni","ctx":"res","name":"ネットワークインターフェイス","code":"ENI","x":1160,"y":490,"def":"VPC 内の仮想ネットワークカード。同じ AZ のインスタンスに付け外しでき、属性はインターフェイスについて回る。","aliases":["Elastic Network Interface","network interface(コンソールと EC2 API の名称)"],"props":["サブネットの範囲から取るプライベート IPv4 アドレス","プライベート IPv4 ごとに 1 つの Elastic IP","セキュリティグループ"],"sources":["https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html"]},{"id":"ecsTask","ctx":"res","name":"ECS タスク(Fargate)","code":"Amazon ECS task on Fargate","x":1160,"y":790,"def":"Fargate で動く ECS のタスク。タスクごとに 1 つの ENI を持ち、通信はその ENI を通る。","constraints":["awsVpcConfiguration に指定できるのはサブネット 16 個、セキュリティグループ 5 個まで","コンテナイメージの取得にはインターネットへの経路(パブリック IP か NAT ゲートウェイ)か、ECR のインターフェイス型エンドポイントが要る"],"sources":["https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-networking.html"]},{"id":"s3","ctx":"res","external":true,"name":"Amazon S3","code":"S3","x":320,"y":790,"def":"この図では通信の宛先として参照するだけのストレージサービス。","sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]}],"edges":[{"from":"az","to":"region","pred":"リージョンの中にある","cat":"part-of","src":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"},{"from":"vpc","to":"region","pred":"リージョンを選んで作る","cat":"relates-to","src":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html"},{"from":"vpc","to":"cidr","pred":"IPv4 CIDR を必ず持つ","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html"},{"from":"subnet","to":"vpc","pred":"VPC の中の IP 範囲","cat":"part-of","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"from":"cidr","to":"subnet","pred":"アドレス範囲を限る","cat":"constrains","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html","note":"原文に直接の記述はなく、「サブネットは VPC の中の IP アドレス範囲」という定義から導いた(推定)"},{"from":"subnet","to":"az","pred":"1 つの AZ に収まる","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"from":"publicSubnet","to":"subnet","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"from":"privateSubnet","to":"subnet","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"from":"subnet","to":"routeTable","pred":"1 つに関連付けられる","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"},{"from":"publicSubnet","to":"igw","pred":"直接ルートを持つ","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html","bend":-80},{"from":"privateSubnet","to":"natDevice","pred":"インターネットへは経由する","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html","bend":-60},{"from":"igw","to":"vpc","pred":"VPC にアタッチする","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"},{"from":"routeTable","to":"igw","pred":"0.0.0.0/0 の送り先にする","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html"},{"from":"routeTable","to":"nat","pred":"0.0.0.0/0 の送り先にする","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"from":"routeTable","to":"gwEndpoint","pred":"エンドポイントルートを持つ","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"from":"routeTable","to":"prefixList","pred":"ルートの宛先にする","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html","bend":60},{"from":"nat","to":"natDevice","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"},{"from":"natInstance","to":"natDevice","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"},{"from":"nat","to":"publicSubnet","pred":"パブリック型はここに作る","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html","bend":120},{"from":"nat","to":"eip","pred":"作成時に関連付ける","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html"},{"from":"nat","to":"igw","pred":"インターネット宛てを渡す","cat":"depends-on","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html"},{"from":"gwEndpoint","to":"vpcEndpoint","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"from":"ifEndpoint","to":"vpcEndpoint","pred":"一種","cat":"is-a","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html"},{"from":"gwEndpoint","to":"s3","pred":"S3 への通信を受ける","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"from":"prefixList","to":"s3","pred":"S3 の IP 範囲を表す","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"},{"from":"ifEndpoint","to":"eni","pred":"サブネットに入口の ENI を作る","cat":"produces","src":"https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-access-aws-services.html"},{"from":"eni","to":"subnet","pred":"サブネットの範囲から IP を取る","cat":"depends-on","src":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html","bend":100},{"from":"eni","to":"eip","pred":"プライベート IP ごとに 1 つ関連付けられる","cat":"relates-to","src":"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html"},{"from":"sg","to":"eni","pred":"通信を許可ルールで限る","cat":"constrains","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"},{"from":"sg","to":"vpc","pred":"VPC ごとに作る","cat":"relates-to","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html","bend":200},{"from":"nacl","to":"subnet","pred":"出入りする通信を限る","cat":"constrains","src":"https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"},{"from":"ecsTask","to":"eni","pred":"タスクごとに 1 つ持つ","cat":"depends-on","src":"https://docs.aws.amazon.com/AmazonECS/latest/developerguide/fargate-task-networking.html"}],"actions":[{"id":"actRoute","name":"ルートを追加する","code":"CreateRoute","verb":"ルートを足す","x":40,"y":940,"status":"公式ドキュメント","targets":["routeTable","igw","nat"],"def":"ルートテーブルに、宛先の IP 範囲と送り先の組を足す。","pre":["送り先の IGW は VPC にアタッチ済み"],"effects":["0.0.0.0/0 → IGW ならそのテーブルのサブネットはパブリックになる","0.0.0.0/0 → NAT ゲートウェイならプライベートサブネットから外へ出られる"],"policy":null,"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html","https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html"]},{"id":"actNat","name":"NAT ゲートウェイを作る","code":"CreateNatGateway","verb":"作る","x":320,"y":940,"status":"公式ドキュメント","targets":["nat","eip","publicSubnet"],"def":"パブリック型の NAT ゲートウェイをパブリックサブネットに作る。","pre":["パブリックサブネットがある","関連付ける Elastic IP がある"],"effects":["NAT ゲートウェイ(プライベート IP はサブネットの範囲から自動で選ばれる)"],"policy":null,"sources":["https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html","https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-comparison.html"]},{"id":"actGwEp","name":"ゲートウェイ型エンドポイントを作る","code":"CreateVpcEndpoint (Gateway)","verb":"作る","x":600,"y":940,"status":"公式ドキュメント","targets":["gwEndpoint","routeTable","prefixList"],"def":"S3 か DynamoDB 用のゲートウェイ型エンドポイントを作り、使うサブネットのルートテーブルを選ぶ。","pre":["対象が S3 か DynamoDB"],"effects":["選んだルートテーブルに「プレフィックスリスト → エンドポイント」のルートが自動で入る(変更・削除はできない)","そのテーブルのサブネットの S3 宛て通信はエンドポイントを通る"],"policy":null,"sources":["https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html"]}]}</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const CATS = {
+  'is-a':{name:'is-a',desc:'汎化。下位は上位の一種'},
+  'part-of':{name:'part-of',desc:'構成。全体を成す部分'},
+  'depends-on':{name:'depends-on',desc:'参照・利用。相手がないと成立しない'},
+  'produces':{name:'produces',desc:'生成。相手を生み出す'},
+  'constrains':{name:'constrains',desc:'制約。値・量・状態を制限'},
+  'relates-to':{name:'relates-to',desc:'所属・担当・対象など'},
+};
+// contexts はデータ側で自由に名付ける。既定の CSS 変数（curriculum… の名前）に無い ctx id には、
+// 宣言順でパレットの色を割り当てる。external / action は固定色を使う
+const CTX_ORDER = [...Object.keys(D.contexts||{}).filter(c=>c!=='external'&&c!=='action'),'external','action'];
+(function assignCtxColors(){
+  const light=[['#E3E8F6','#7A8BBE'],['#FBE6DA','#C98868'],['#DFF0E7','#6FA88A'],['#F0E4F4','#A784B5'],['#FAF0D3','#C4A85A'],['#E2EEF4','#7AA2B8'],['#E9E9EC','#9296A3'],['#F3E3E3','#B97A7A'],['#E4F1EE','#6FA3A0'],['#EEE9DC','#A69465']];
+  const dark=[['#283150','#8A9BD0'],['#48302A','#D39A7A'],['#213A31','#7FBA9B'],['#3A2B44','#B995C6'],['#443C22','#D1B86A'],['#22343F','#8AB4CA'],['#2C2F37','#A0A5B3'],['#3F2A2A','#C98A8A'],['#233733','#80B3AF'],['#363024','#B8A676']];
+  const defined=new Set(['curriculum','planning','learning','content','organization','notification','identity','external','action']);
+  const ids=CTX_ORDER.filter(c=>!defined.has(c));
+  if(!ids.length) return;
+  const rule=(pal,sel)=>sel+'{'+ids.map((c,i)=>{const [f,b]=pal[i%pal.length];return `--ctx-${c}:${f};--ctx-${c}-b:${b};`;}).join('')+'}';
+  const st=document.createElement('style');
+  st.textContent=rule(light,':root')+'\n@media (prefers-color-scheme: dark){'+rule(dark,':root:not([data-theme="light"])')+'}\n'+rule(dark,':root[data-theme="dark"]');
+  document.head.appendChild(st);
+})();
+const nodes = new Map(D.nodes.map(n=>[n.id,n]));
+const actions = D.actions||[];
+actions.forEach(a=>{a.isAction=true; nodes.set(a.id,a);});
+const edges = D.edges.slice();
+actions.forEach(a=>(a.targets||[]).forEach(t=>edges.push({from:a.id,to:t,pred:a.verb||'対象',cat:'action',actionLink:true,src:(a.sources||[])[0]||''})));
+
+// ---- header
+document.getElementById('title').textContent = D.title;
+document.getElementById('subtitle').textContent = D.subtitle||'';
+document.getElementById('date').textContent = D.extractedAt;
+document.getElementById('counts').textContent = `${D.nodes.length} 概念 · ${D.edges.length} 関係` + (actions.length?` · ${actions.length} Action`:'');
+
+// ---- measure helpers
+function tw(s,size,mono){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+= c>0x2E80? size*1.0 : (mono? size*0.6 : size*0.56);}return w;}
+function nodeSize(n){
+  const nameW = tw(n.name,13.5), codeW = n.code? tw(n.code,10,true):0, eyeW = tw(n.isAction? 'ACTION' : ctxName(n.ctx),9.5)*0.9;
+  const w = Math.max(112, Math.ceil(Math.max(nameW,codeW,eyeW))+26);
+  const h = n.code? 60 : 48;
+  return {w,h};
+}
+function ctxName(id){return (D.contexts[id]||{name:id||''}).name||'';}
+
+// ---- SVG build
+const svg = document.getElementById('svg');
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs||{}){e.setAttribute(k,attrs[k]);}if(parent)parent.appendChild(e);return e;}
+const defs = el('defs',{},svg);
+for(const cat of Object.keys(CATS).concat(['action'])){
+  const m = el('marker',{id:'m-'+cat,viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'9',markerHeight:'9',markerUnits:'userSpaceOnUse',orient:'auto-start-reverse'},defs);
+  const col = cat==='action'? 'var(--ctx-action-b)':`var(--cat-${cat})`;
+  if(cat==='is-a'){ el('path',{d:'M1,1 L9,5 L1,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else if(cat==='part-of'){ el('path',{d:'M1,5 L5,1 L9,5 L5,9 Z',fill:'var(--paper)',stroke:col,'stroke-width':'1.3'},m); }
+  else { el('path',{d:'M1,1 L9,5 L1,9 Z',fill:col},m); }
+}
+const viewport = el('g',{id:'viewport'},svg);
+const gEdges = el('g',{},viewport), gNodes = el('g',{},viewport);
+
+// node positions & sizes
+for(const n of nodes.values()){ Object.assign(n, nodeSize(n)); }
+function center(n){return {x:n.x+n.w/2,y:n.y+n.h/2};}
+function anchor(n,toward){
+  const c=center(n); const dx=toward.x-c.x, dy=toward.y-c.y;
+  if(dx===0&&dy===0) return c;
+  const sx = n.w/2/Math.abs(dx||1e-9), sy = n.h/2/Math.abs(dy||1e-9);
+  const s=Math.min(sx,sy);
+  return {x:c.x+dx*s, y:c.y+dy*s};
+}
+// group parallel edges
+const pairCount = {};
+edges.forEach(e=>{const k=[e.from,e.to].sort().join('|');pairCount[k]=(pairCount[k]||0)+1;e._k=k;});
+const pairSeen = {};
+const edgeEls = [];
+edges.forEach((e,i)=>{
+  const a=nodes.get(e.from), b=nodes.get(e.to); if(!a||!b){console.warn('missing node',e);return;}
+  const idx = (pairSeen[e._k]=(pairSeen[e._k]||0)+1);
+  const total = pairCount[e._k];
+  let k = total>1 ? (idx-1 - (total-1)/2) : 0;
+  if(e.from>e.to) k=-k;
+  const ca=center(a), cb=center(b);
+  const mx=(ca.x+cb.x)/2, my=(ca.y+cb.y)/2;
+  const len=Math.hypot(cb.x-ca.x,cb.y-ca.y)||1;
+  const nx=-(cb.y-ca.y)/len, ny=(cb.x-ca.x)/len;
+  const off = (e.bend!==undefined? e.bend : k*55);
+  const ctrl={x:mx+nx*off, y:my+ny*off};
+  const p1=anchor(a,ctrl), p2=anchor(b,ctrl);
+  const d = off===0? `M${p1.x},${p1.y} L${p2.x},${p2.y}` : `M${p1.x},${p1.y} Q${ctrl.x},${ctrl.y} ${p2.x},${p2.y}`;
+  const g = el('g',{class:'edge '+(e.actionLink?'action-link':'cat-'+e.cat),'data-i':i},gEdges);
+  el('path',{d,class:'hit'},g);
+  el('path',{d,class:'vis','marker-end':`url(#m-${e.actionLink?'action':e.cat})`},g);
+  // label at curve midpoint t=.5
+  const lx = off===0? mx : (0.25*p1.x+0.5*ctrl.x+0.25*p2.x), ly = off===0? my : (0.25*p1.y+0.5*ctrl.y+0.25*p2.y);
+  const lbl = el('g',{class:'lbl'},g);
+  const w = tw(e.pred,10.5)+10;
+  el('rect',{x:lx-w/2,y:ly-8,width:w,height:16},lbl);
+  const t = el('text',{x:lx,y:ly+3.5,'text-anchor':'middle'},lbl); t.textContent=e.pred;
+  e._el=g; edgeEls.push(g);
+});
+for(const n of nodes.values()){
+  const g = el('g',{class:'node'+(n.external?' external':'')+(n.isAction?' action':''),'data-id':n.id,transform:`translate(${n.x},${n.y})`,tabindex:'0',role:'button','aria-label':n.name},gNodes);
+  const ctx = n.isAction? 'action' : n.ctx;
+  el('rect',{class:'body',width:n.w,height:n.h,style:`fill:var(--ctx-${ctx});stroke:var(--ctx-${ctx}-b)`},g);
+  const eye = el('text',{class:'eyebrow',x:12,y:15},g); eye.textContent = n.isAction? 'ACTION' : ctxName(n.ctx);
+  const nm = el('text',{class:'name',x:12,y:n.code?35:33},g); nm.textContent=n.name;
+  if(n.code){const c=el('text',{class:'code',x:12,y:50},g); c.textContent=n.code;}
+  g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();selectNode(n.id);}});
+  n._el=g;
+}
+
+// ---- pan/zoom
+let tf={x:0,y:0,k:1};
+function apply(){viewport.setAttribute('transform',`translate(${tf.x},${tf.y}) scale(${tf.k})`);}
+function bbox(includeActions){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const n of nodes.values()){ if(n.isAction&&!includeActions) continue; x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x+n.w);y1=Math.max(y1,n.y+n.h);}
+  return {x0,y0,x1,y1};
+}
+function fit(){
+  const r=svg.getBoundingClientRect(); const b=bbox(showActions);
+  const pad=40; const bw=b.x1-b.x0+pad*2, bh=b.y1-b.y0+pad*2;
+  const k=Math.min(r.width/bw, r.height/bh, 1.6);
+  tf={k, x:(r.width-(b.x1-b.x0)*k)/2 - b.x0*k, y:(r.height-(b.y1-b.y0)*k)/2 - b.y0*k};
+  apply();
+}
+function zoomAt(f,cx,cy){const nk=Math.max(.25,Math.min(3,tf.k*f));const r=nk/tf.k;tf={k:nk,x:cx-(cx-tf.x)*r,y:cy-(cy-tf.y)*r};apply();}
+svg.addEventListener('wheel',ev=>{ev.preventDefault();const r=svg.getBoundingClientRect();zoomAt(ev.deltaY<0?1.12:1/1.12,ev.clientX-r.left,ev.clientY-r.top);},{passive:false});
+let drag=null;
+svg.addEventListener('pointerdown',ev=>{if(ev.button!==0)return;drag={x:ev.clientX,y:ev.clientY,tx:tf.x,ty:tf.y,moved:false,target:ev.target};svg.setPointerCapture(ev.pointerId);});
+svg.addEventListener('pointermove',ev=>{if(!drag)return;const dx=ev.clientX-drag.x,dy=ev.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3){drag.moved=true;svg.classList.add('dragging');}tf.x=drag.tx+dx;tf.y=drag.ty+dy;apply();});
+svg.addEventListener('pointerup',ev=>{if(drag&&!drag.moved){const t=drag.target;const gn=t.closest&&t.closest('.node');const ge=t.closest&&t.closest('.edge');if(gn){selectNode(gn.dataset.id);}else if(ge){selectEdge(Number(ge.dataset.i));}else{clearSelection();}}drag=null;svg.classList.remove('dragging');});
+document.getElementById('zin').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1.25,r.width/2,r.height/2);};
+document.getElementById('zout').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(1/1.25,r.width/2,r.height/2);};
+document.getElementById('zfit').onclick=fit;
+window.addEventListener('resize',fit);
+
+// ---- legend
+// 凡例は畳める。ブログの iframe のように描画領域が低いときは畳んだ状態で始める
+const legendEl=document.getElementById('legend'), legendToggle=document.getElementById('legendToggle');
+function setLegend(open){legendEl.classList.toggle('collapsed',!open);legendToggle.setAttribute('aria-expanded',String(open));}
+legendToggle.addEventListener('click',()=>setLegend(legendEl.classList.contains('collapsed')));
+setLegend(document.getElementById('stage').clientHeight>=900);
+const catsEl=document.getElementById('cats');
+const hiddenCats=new Set();
+for(const [id,c] of Object.entries(CATS)){
+  const lab=document.createElement('label');
+  lab.innerHTML=`<input type="checkbox" checked data-cat="${id}"><span class="sw${id==='relates-to'?' dotted':''}" style="color:var(--cat-${id})"></span><span><span class="cat-name mono">${c.name}</span><br><span class="cat-desc">${c.desc}</span></span>`;
+  lab.querySelector('input').addEventListener('change',ev=>{ev.target.checked?hiddenCats.delete(id):hiddenCats.add(id);refreshVisibility();});
+  catsEl.appendChild(lab);
+}
+const ctxsEl=document.getElementById('ctxs');
+const usedCtx=new Set(D.nodes.map(n=>n.ctx));
+CTX_ORDER.filter(c=>usedCtx.has(c)).forEach(c=>{const s=document.createElement('span');s.className='ctx';s.innerHTML=`<i style="background:var(--ctx-${c});border-color:var(--ctx-${c}-b)"></i>${ctxName(c)}`;ctxsEl.appendChild(s);});
+let showActions=false;
+if(actions.length){document.getElementById('actionToggle').hidden=false;document.getElementById('showActions').addEventListener('change',ev=>{showActions=ev.target.checked;refreshVisibility();fit();if(!selected)renderQuestions();});}
+function refreshVisibility(){
+  edges.forEach(e=>{ if(!e._el) return; const hide = e.actionLink? !showActions : hiddenCats.has(e.cat); e._el.classList.toggle('hidden',hide);});
+  actions.forEach(a=>a._el.classList.toggle('hidden',!showActions));
+}
+
+// ---- selection / detail
+let selected=null;
+const body=document.getElementById('body');
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function setTab(name){tabs.forEach(t=>t.setAttribute('aria-selected',String(t.dataset.tab===name)));}
+tabs.forEach(t=>t.addEventListener('click',()=>{setTab(t.dataset.tab);if(t.dataset.tab==='questions')renderQuestions();else if(t.dataset.tab==='sources')renderSources();else renderDetail();}));
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function li(items){return (items||[]).map(it=>typeof it==='string'?`<li>${esc(it)}</li>`:`<li class="${it.inferred?'inf':''}">${esc(it.t)}</li>`).join('');}
+function catBadge(cat){return `<span class="cat mono" style="background:var(--cat-${cat})">${cat}</span>`;}
+function clearSelection(){selected=null;[...gNodes.children].forEach(g=>g.classList.remove('dim','selected'));edgeEls.forEach(g=>g.classList.remove('dim','selected'));}
+function highlightNode(id){
+  const nb=new Set([id]); edges.forEach(e=>{if(e.from===id)nb.add(e.to);if(e.to===id)nb.add(e.from);});
+  [...gNodes.children].forEach(g=>{g.classList.toggle('dim',!nb.has(g.dataset.id));g.classList.toggle('selected',g.dataset.id===id);});
+  edges.forEach(e=>{if(!e._el)return;e._el.classList.toggle('dim',!(e.from===id||e.to===id));e._el.classList.remove('selected');});
+}
+function selectNode(id){
+  const n=nodes.get(id); if(!n) return; selected={type:'node',id};
+  if(n.isAction&&!showActions){showActions=true;document.getElementById('showActions').checked=true;refreshVisibility();}
+  highlightNode(id); setTab('detail'); renderDetail();
+}
+function selectEdge(i){
+  const e=edges[i]; selected={type:'edge',i};
+  [...gNodes.children].forEach(g=>g.classList.toggle('dim',!(g.dataset.id===e.from||g.dataset.id===e.to)));
+  edges.forEach((x,j)=>{if(!x._el)return;x._el.classList.toggle('dim',j!==i);x._el.classList.toggle('selected',j===i);});
+  setTab('detail'); renderDetail();
+}
+function nodeLink(id){const n=nodes.get(id);return `<span class="other" data-go="${id}">${esc(n?n.name:id)}</span>`;}
+function renderDetail(){
+  if(!selected){body.innerHTML=`<p class="hint">図の概念（箱）または関係名（線上のラベル）をクリックすると、定義・別名・属性・制約・関係・出典をここに表示する。</p>`;return;}
+  if(selected.type==='edge'){
+    const e=edges[selected.i];
+    body.innerHTML=`<div class="ctx-chip">関係</div><h2>${esc(nodes.get(e.from).name)} <span style="color:var(--muted)">→</span> ${esc(nodes.get(e.to).name)}</h2>
+      <p><b>${esc(e.pred)}</b> ${e.actionLink?'<span class="cat mono" style="background:var(--ctx-action-b)">action</span>':catBadge(e.cat)}</p>
+      ${e.note?`<div class="note">${esc(e.note)}</div>`:''}
+      <h3>出典</h3><ul class="src-list"><li>${esc(e.src||'—')}</li></ul>
+      <h3>両端</h3><div class="rel"><span class="dir">from</span><span>${nodeLink(e.from)}</span></div><div class="rel"><span class="dir">to</span><span>${nodeLink(e.to)}</span></div>`;
+    bindLinks();return;
+  }
+  const n=nodes.get(selected.id);
+  if(n.isAction){renderAction(n);return;}
+  const out=edges.filter(e=>e.from===n.id&&!e.actionLink), inc=edges.filter(e=>e.to===n.id&&!e.actionLink);
+  const acts=edges.filter(e=>e.to===n.id&&e.actionLink).map(e=>nodes.get(e.from));
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-${n.ctx});border-color:var(--ctx-${n.ctx}-b)"></i>${esc(ctxName(n.ctx))}${n.external?' · このスライスでは外部参照':''}</div>
+    <h2>${esc(n.name)}</h2>
+    ${n.code?`<div class="mono" style="color:var(--muted)">${esc(n.code)}</div>`:''}
+    <p>${esc(n.def)}</p>
+    ${n.note?`<div class="note">${esc(n.note)}</div>`:''}
+    ${(n.aliases||[]).length?`<h3>別名・ソース上の名称</h3><div class="aliases">${n.aliases.map(a=>`<span class="${/^[\x20-\x7e]+$/.test(a)?'code':''}">${esc(a)}</span>`).join('')}</div>`:''}
+    ${(n.props||[]).length?`<h3>主要な属性</h3><ul class="plain">${li(n.props)}</ul>`:''}
+    ${(n.constraints||[]).length?`<h3>制約</h3><ul class="plain">${li(n.constraints)}</ul>`:''}
+    <h3>関係（${out.length+inc.length}）</h3>
+    ${out.map(e=>`<div class="rel"><span class="dir">→</span><span><span class="pred">${esc(e.pred)}</span> ${nodeLink(e.to)} ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${inc.map(e=>`<div class="rel"><span class="dir">←</span><span>${nodeLink(e.from)} が <span class="pred">${esc(e.pred)}</span> ${catBadge(e.cat)}</span><span class="src">${esc(e.src||'')}</span></div>`).join('')}
+    ${acts.length?`<h3>この概念を対象にする Action</h3>${acts.map(a=>`<div class="rel"><span class="dir">⚙</span><span>${nodeLink(a.id)}</span></div>`).join('')}`:''}
+    <h3>出典</h3><ul class="src-list">${(n.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function renderAction(a){
+  const pol=a.policy;
+  body.innerHTML=`
+    <div class="ctx-chip"><i style="background:var(--ctx-action);border-color:var(--ctx-action-b)"></i>Action${a.status?` · ${esc(a.status)}`:''}</div>
+    <h2>${esc(a.name)}</h2>${a.code?`<div class="mono" style="color:var(--muted)">${esc(a.code)}</div>`:''}
+    <p>${esc(a.def||'')}</p>
+    <h3>対象概念</h3><div class="aliases">${(a.targets||[]).map(t=>`<span>${nodeLink(t)}</span>`).join('')}</div>
+    <h3>事前条件</h3><ul class="plain">${li(a.pre)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>効果</h3><ul class="plain">${li(a.effects)||'<li class="hint">ソースに記載なし</li>'}</ul>
+    <h3>Policy</h3>${pol?`<div class="pol"><div class="who">${esc(pol.actor)}</div><div>${esc(pol.rule)}</div><dl class="kv" style="margin:6px 0 0"><dt>承認</dt><dd>${esc(pol.approval||'ソースに記載なし')}</dd></dl><ul class="src-list" style="margin-top:6px">${(pol.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`:`<p class="hint">ソースに記載なし</p>`}
+    <h3>出典</h3><ul class="src-list">${(a.sources||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`;
+  bindLinks();
+}
+function bindLinks(){body.querySelectorAll('[data-go]').forEach(s=>s.addEventListener('click',()=>selectNode(s.dataset.go)));}
+function renderQuestions(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">この図が答えるために切り出した問い。判定は「ソースから答えられるか」。概念名を押すと図で強調する。</p>
+  ${D.questions.map((q,i)=>`<div class="q"><span class="verdict ${q.answerable}">${{yes:'ソースから答えられる',partial:'一部のみ答えられる',no:'ソースに記載なし'}[q.answerable]}</span><p class="qt">Q${i+1}. ${esc(q.q)}</p><div class="ans">${q.answer.map(p=>`<p>${esc(p)}</p>`).join('')}</div><div class="path">${(q.path||[]).map(id=>`<button data-go="${id}">${esc((nodes.get(id)||{name:id}).name)}</button>`).join('')}</div></div>`).join('')}
+  ${actions.length?`<h3>Action / Policy（${actions.length}）</h3><p class="hint">凡例の「Action / Policy を重ねる」で図に重ねられる。</p>${actions.map(a=>`<div class="action-card" data-go="${a.id}"><b>${esc(a.name)}</b><span class="st">${esc(a.status||'')}${a.policy?` · Policy: ${esc(a.policy.actor)}`:' · Policy: ソースに記載なし'}</span></div>`).join('')}`:''}
+  ${D.scopeNote?`<h3>スコープ外</h3><p style="font-size:12.5px">${esc(D.scopeNote)}</p>`:''}`;
+  body.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>selectNode(b.dataset.go)));
+}
+function renderSources(){
+  body.innerHTML=`<p class="hint" style="margin-top:0">抽出日 ${esc(D.extractedAt)} 時点のスナップショット。以下を読んで抽出した。パスは ${esc(D.repoRoot||'リポジトリ')} 直下からの相対。</p>
+  <ul class="src-list" style="font-size:12px">${D.sources.map(s=>`<li style="margin:6px 0"><span style="color:var(--ink);font-family:'Zen Kaku Gothic New',sans-serif">${esc(s.label)}</span><br>${esc(s.path)}</li>`).join('')}</ul>
+  <h3>名寄せのメモ</h3><ul class="plain" style="font-size:12.5px">${(D.identityNotes||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+svg.addEventListener('click',()=>{});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){clearSelection();setTab('questions');renderQuestions();}});
+
+refreshVisibility(); renderQuestions(); requestAnimationFrame(fit);
+})();
+</script>

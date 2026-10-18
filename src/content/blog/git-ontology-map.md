@@ -48,3 +48,5 @@ Git では同じものに名前が複数付いています。index はその代�
 4. skill の描画テンプレートで HTML にした。抽出日は 2026-10-18
 
 pack ファイル・merge 中の多段 index・submodule・`git worktree` は問いに要らないので外しました。
+
+同じ skill で作った AWS の図もあります: [VPC の概念図](/blog/aws-vpc-ontology-map/)、[非同期メッセージングの概念図](/blog/aws-messaging-ontology-map/)。
