@@ -73,6 +73,9 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			.prose :global(th) {
 				background: rgb(var(--gray-light), 40%);
 			}
+			.prose :global(td:first-child), .prose :global(th:first-child) {
+				white-space: nowrap;
+			}
 		</style>
 	</head>
 
