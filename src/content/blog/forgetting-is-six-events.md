@@ -15,7 +15,7 @@ pubDate: '2026-10-17'
 記憶は「覚える → 保つ → 思い出す」の 3 段階で、忘却はそれぞれの段階で別の形で起きます。
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph E["覚える"]
     E1["1 入らない"]
   end
