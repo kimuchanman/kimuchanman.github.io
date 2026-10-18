@@ -8,11 +8,7 @@ pubDate: '2026-10-17'
 
 調べてみると、「忘れた」と一言で呼んでいるものが、少なくとも 6 つの別の出来事に分かれていました。この記事はその 6 つを、日常の例から順に書きます。LLM の話は最後に少しだけ触れます。
 
-同じ内容を 9 分の解説動画にもしています(ずんだもんが質問し、四国めたんが答える形式)。文章より先に見ても、あとで見ても構いません。
-
-<iframe src="/videos/forgetting-mechanisms.html" title="解説動画: 忘却の六つの出来事" loading="lazy" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px;background:#fff"></iframe>
-
-<p><a href="/videos/forgetting-mechanisms.html" target="_blank" rel="noopener">動画を別タブで開く</a>。音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。</p>
+同じ内容を解説動画 [忘却の六つの出来事](/blog/video-forgetting-mechanisms/)(9 分)にもしています。文章より先に見ても、あとで見ても構いません。
 
 ## 全体像
 

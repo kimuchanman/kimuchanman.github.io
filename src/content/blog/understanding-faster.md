@@ -17,11 +17,7 @@ updatedDate: '2026-10-09'
 
 アウトプットは、AI からの口頭インタビューに答えるのがおすすめだ。声に出した内容は、黙読しただけの内容より記憶に残りやすい(プロダクション効果)。さっさとアウトプットして、AI に絶望の谷へ叩き落としてもらおう。
 
-この記事の背景にある「人の理解はどう組み上がるか」(スキーマ、作業記憶の容量、状況モデル、自己説明と想起、説明深度の錯覚)を、12 分の解説動画にしています(ずんだもんが質問し、四国めたんが答える形式)。記事と同じ内容ではなく、認知科学側の土台です。
-
-<iframe src="/videos/understanding.html" title="解説動画: 理解の組み立て方" loading="lazy" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px;background:#fff"></iframe>
-
-<p><a href="/videos/understanding.html" target="_blank" rel="noopener">動画を別タブで開く</a>。音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。</p>
+この記事の背景にある「人の理解はどう組み上がるか」は、解説動画 [理解の組み立て方](/blog/video-understanding/)(12 分)にまとめています。記事と同じ内容ではなく、認知科学側の土台です。
 
 ## 「頭の片隅に置かれた状態」を目標にする
 

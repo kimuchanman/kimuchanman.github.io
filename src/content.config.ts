@@ -16,6 +16,9 @@ const blog = defineCollection({
 			heroImage: z.optional(image()),
 			// true の記事はサイトに出さない(リポジトリ上では見える)
 			draft: z.boolean().default(false),
+			// 解説動画の記事: public/videos/<video>.html を本体として全幅で表示する
+			video: z.string().optional(),
+			duration: z.string().optional(),
 		}),
 });
 

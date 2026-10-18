@@ -6,11 +6,7 @@ pubDate: '2026-10-18'
 
 記事を読んでいる間は完全にわかった気がした。翌日、何も見ずに説明しようとしたら出てこない。この経験を何度もしているうちに、読んでいる間の「わかった」は理解とは別のものを測っているのではないかと思うようになりました。調べてみると、別のものでした。
 
-同じ内容を 5 分の解説動画にもしています(ずんだもんが質問し、四国めたんが答える形式)。文章より先に見ても、あとで見ても構いません。
-
-<iframe src="/videos/fluency-vs-diff.html" title="解説動画: 差分と流暢さ" loading="lazy" style="width:100%;height:720px;border:1px solid #ddd;border-radius:8px;background:#fff"></iframe>
-
-<p><a href="/videos/fluency-vs-diff.html" target="_blank" rel="noopener">動画を別タブで開く</a>。音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。</p>
+同じ内容を解説動画 [差分と流暢さ](/blog/video-fluency-vs-diff/)(5 分)にもしています。文章より先に見ても、あとで見ても構いません。
 
 ## 読むだけの「わかった」は流暢さ
 
