@@ -81,7 +81,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 								<p class="date">
 									<FormattedDate date={post.data.pubDate} />
 								</p>
-								<h4 class="title">{(post.data.video || post.body?.includes('class="video-embed"')) && <span class="kind">動画</span>}{post.data.embed && <span class="kind">図</span>}{post.data.title}</h4>
+								<h4 class="title">{(post.data.video || post.body?.includes('class="video-embed"')) && <span class="kind">動画</span>}{(post.data.embed || post.body?.includes('class="map-embed"')) && <span class="kind">図</span>}{post.data.title}</h4>
 							</a>
 						</li>
 					))}
