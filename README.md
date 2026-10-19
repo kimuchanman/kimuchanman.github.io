@@ -3,7 +3,7 @@
 Astro で作った静的サイト。main に push すると GitHub Actions が build して GitHub Pages に配信する。
 
 - サイト: https://kimuchanman.github.io
-- 設計と書き方の方針: docs/DESIGN.md(全体図を先に、数値は表、関係は Mermaid、文は著者の言葉のまま)
+- 設計と書き方の方針: docs/DESIGN.md(全体図を先に、数値は表、関係は Mermaid、文は kimukei-writing で整えて著者の文として扱う)
 - トップが記事一覧。`/blog` はトップへ転送する
 - 記事を載せる手順は個人 skill `blog-publish`(`~/.claude/skills/blog-publish/SKILL.md`)にある
 - 記事: `src/content/blog/*.md`。frontmatter は `title` `description` `pubDate`(任意で `updatedDate` `heroImage` `draft`)
