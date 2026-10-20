@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI を選んで決めるデモ</title>
+<style>
+  :root {
+    color-scheme: light;
+    /* デモの枠 */
+    --demo-bg: #f4f4f2;
+    --demo-panel: #ffffff;
+    --demo-ink: #222;
+    --demo-muted: #6b6b6b;
+    --demo-line: #dcdcd8;
+    --demo-accent: #2f5bd3;
+    --demo-accent-soft: #e8eefc;
+    --demo-ok: #1a7f4b;
+    --demo-ng: #c2361f;
+    --demo-ng-soft: #faeae6;
+    /* Reservo(架空の予約管理 SaaS)のトークン */
+    --r-primary: #0e877d;
+    --r-primary-hover: #0f6b64;
+    --r-surface: #ffffff;
+    --r-surface-muted: #f5f7f7;
+    --r-ink: #1f2726;
+    --r-ink-muted: #5d6b69;
+    --r-line: #dde4e3;
+    --r-brand-50: #f0fbfa;
+    --r-radius: 8px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--demo-bg);
+    color: var(--demo-ink);
+    font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 28px; }
+  button { font: inherit; cursor: pointer; }
+
+  /* 進行バー */
+  .steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 16px; flex-wrap: wrap; }
+  .steps li {
+    flex: 1 1 120px; padding: 8px 10px; border-radius: 8px; background: #e9e9e6;
+    color: var(--demo-muted); font-size: 13px; line-height: 1.4;
+  }
+  .steps li b { display: block; font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+  .steps li.done { background: #dfe9df; color: #2c5a35; }
+  .steps li.now { background: var(--demo-accent); color: #fff; }
+
+  .panel { background: var(--demo-panel); border: 1px solid var(--demo-line); border-radius: 12px; padding: 20px; }
+  .panel h2 { margin: 0 0 4px; font-size: 19px; }
+  .lead { margin: 0 0 16px; color: var(--demo-muted); }
+  .who { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+  .who.ai { background: #ece6fb; color: #5b3fb8; }
+  .who.you { background: var(--demo-accent-soft); color: var(--demo-accent); }
+
+  /* 依頼 */
+  .bubble { border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; max-width: 640px; }
+  .bubble.req { background: #f1f1ee; }
+  .bubble.ai { background: #f5f2fd; border: 1px solid #e2dbf7; }
+  .bubble p { margin: 0; }
+  .bubble .small { color: var(--demo-muted); font-size: 13px; margin-top: 6px; }
+
+  /* 選択カード */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    text-align: left; background: #fff; border: 2px solid var(--demo-line); border-radius: 10px; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px; color: inherit;
+  }
+  .card:hover { border-color: #a9b6d8; }
+  .card[aria-pressed="true"] { border-color: var(--demo-accent); box-shadow: 0 0 0 3px var(--demo-accent-soft); }
+  .card h3 { margin: 0; font-size: 15px; }
+  .card .desc { margin: 0; font-size: 13px; color: var(--demo-muted); }
+  .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: #fff3c4; color: #7a5a00; margin-left: 6px; vertical-align: 2px; }
+
+  /* ワイヤー */
+  .wire { background: #fafaf8; border: 1px solid #e6e6e2; border-radius: 6px; padding: 8px; height: 150px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+  .wire .row { display: flex; gap: 5px; }
+  .wire i { display: block; background: #d9d9d4; border-radius: 3px; height: 8px; }
+  .wire i.h { height: 12px; width: 40%; background: #bdbdb7; }
+  .wire i.btn { width: 22%; height: 12px; margin-left: auto; background: #9a9a94; }
+  .wire i.in { height: 16px; width: 100%; background: #fff; border: 1px solid #c9c9c4; }
+  .wire i.stat { flex: 1; height: 26px; background: #e7e7e2; }
+  .wire i.l { flex: 1; }
+  .wire .split { display: flex; gap: 6px; flex: 1; }
+  .wire .split > div { display: flex; flex-direction: column; gap: 5px; }
+  .wire .pane { flex: 0 0 38%; background: #efefea; border-radius: 4px; padding: 5px; }
+  .wire .chart { height: 46px; background: #e2e2dc; border-radius: 3px; }
+
+  .actions { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  .primary { background: var(--demo-accent); color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; }
+  .primary:disabled { background: #b9c3dc; cursor: not-allowed; }
+  .ghost { background: #fff; color: var(--demo-ink); border: 1px solid var(--demo-line); border-radius: 8px; padding: 8px 14px; }
+  .note { font-size: 13px; color: var(--demo-muted); }
+
+  /* 生成画面とチェック */
+  .gen { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .gen { grid-template-columns: 1fr; } }
+  .checks { border: 1px solid var(--demo-line); border-radius: 10px; padding: 14px; background: #fff; }
+  .checks h3 { margin: 0 0 8px; font-size: 15px; }
+  .checks ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .checks li { display: grid; grid-template-columns: 22px 1fr; gap: 4px; font-size: 13px; }
+  .checks li .mark { font-weight: 700; }
+  .checks li.ok .mark { color: var(--demo-ok); }
+  .checks li.ng .mark { color: var(--demo-ng); }
+  .checks li.wait .mark { color: #aaa; }
+  .checks li .detail { grid-column: 2; color: var(--demo-ng); font-size: 12px; }
+  .browser { border: 1px solid #cfcfca; border-radius: 10px; overflow: hidden; background: var(--r-surface-muted); }
+  .browser .bar { background: #e8e8e4; padding: 6px 10px; font-size: 12px; color: #777; display: flex; gap: 6px; align-items: center; }
+  .browser .bar span.dot { width: 9px; height: 9px; border-radius: 50%; background: #c9c9c4; display: inline-block; }
+  .browser .bar code { margin-left: 8px; background: #fff; border-radius: 4px; padding: 0 8px; font-family: inherit; }
+  .flagged { outline: 2px dashed var(--demo-ng) !important; outline-offset: 2px; position: relative; }
+  .flag-label { position: absolute; right: 0; top: -22px; background: var(--demo-ng); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+  /* 修正依頼 */
+  .review { margin-top: 16px; border-top: 1px solid var(--demo-line); padding-top: 14px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .chip { border: 1px solid var(--demo-line); background: #fff; border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .chip[aria-pressed="true"] { border-color: var(--demo-accent); background: var(--demo-accent-soft); color: var(--demo-accent); }
+
+  /* 記録 */
+  .log { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .log th, .log td { text-align: left; border-bottom: 1px solid var(--demo-line); padding: 8px 6px; vertical-align: top; }
+  .log th { color: var(--demo-muted); font-weight: 600; font-size: 12px; }
+  .log td.time { color: var(--demo-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .log .rej { color: var(--demo-muted); font-size: 13px; margin: 2px 0 0; }
+  .tablewrap { overflow-x: auto; }
+
+  /* ---- Reservo の画面(トークンだけで組む) ---- */
+  .r { color: var(--r-ink); font-size: 13px; }
+  .r-top { background: var(--r-surface); border-bottom: 1px solid var(--r-line); padding: 8px 16px; display: flex; gap: 18px; align-items: center; }
+  .r-logo { font-weight: 700; color: var(--r-primary); }
+  .r-nav { display: flex; gap: 14px; color: var(--r-ink-muted); }
+  .r-nav .on { color: var(--r-ink); font-weight: 600; }
+  .r-main { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .r-head { display: flex; align-items: flex-start; gap: 12px; }
+  .r-head h1 { margin: 0; font-size: 18px; }
+  .r-head p { margin: 2px 0 0; color: var(--r-ink-muted); font-size: 12px; }
+  .r-btn { margin-left: auto; background: var(--r-primary); color: #fff; border: 0; border-radius: var(--r-radius); padding: 7px 12px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .r-btn:hover { background: var(--r-primary-hover); }
+  .r-label { font-size: 12px; color: var(--r-ink-muted); display: block; margin-bottom: 4px; }
+  .r-input { width: 100%; border: 1px solid var(--r-line); border-radius: var(--r-radius); padding: 7px 10px; font: inherit; background: var(--r-surface); color: var(--r-ink); }
+  .r-input.raw { border-color: #9aa5a3; }
+  .r-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .r-stat { background: var(--r-surface); border: 1px solid var(--r-line); border-radius: var(--r-radius); padding: 10px 12px; }
+  .r-stat .k { font-size: 11px; color: var(--r-ink-muted); }
+  .r-stat .v { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .r-card { background: var(--r-surface); border: 1px solid var(--r-line); border-radius: var(--r-radius); overflow: hidden; }
+  .r-table { width: 100%; border-collapse: collapse; }
+  .r-table th { text-align: left; font-size: 11px; color: var(--r-ink-muted); font-weight: 600; background: var(--r-surface-muted); padding: 7px 10px; border-bottom: 1px solid var(--r-line); white-space: nowrap; }
+  .r-table td { padding: 7px 10px; border-bottom: 1px solid var(--r-line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .r-table tr:last-child td { border-bottom: 0; }
+  .r-table tr.sel td { background: var(--r-brand-50); }
+  .r-table tbody tr { cursor: default; }
+  .r-split tbody tr { cursor: pointer; }
+  .r-link { color: var(--r-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .r-empty { text-align: center; padding: 28px 12px; }
+  .r-empty p { margin: 0; }
+  .r-empty .sub { color: var(--r-ink-muted); font-size: 12px; margin-top: 4px; }
+  .r-split { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; align-items: start; }
+  .r-detail { padding: 12px; }
+  .r-detail h4 { margin: 0 0 8px; font-size: 14px; }
+  .r-detail dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; }
+  .r-detail dt { color: var(--r-ink-muted); }
+  .r-detail dd { margin: 0; }
+  .r-scroll { overflow-x: auto; }
+  @media (max-width: 560px) { .r-split { grid-template-columns: 1fr; } .r-stats { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <ol class="steps" id="steps"></ol>
+  <div class="panel" id="stage"></div>
+</div>
+
+<script>
+(() => {
+  // ---- デモのデータ(架空の予約管理 SaaS「Reservo」) ----
+  const MEMBERS = [
+    { name: "佐藤 花子", kana: "さとう はなこ", no: "M-0001", phone: "090-1234-5678", visits: 12, last: "2026-09-10" },
+    { name: "田中 一郎", kana: "たなか いちろう", no: "M-0002", phone: "080-2345-6789", visits: 8, last: "2026-09-05" },
+    { name: "鈴木 美咲", kana: "すずき みさき", no: "M-0003", phone: "090-3456-7890", visits: 21, last: "2026-09-14" },
+    { name: "高橋 健", kana: "たかはし けん", no: "M-0004", phone: "070-4567-8901", visits: 3, last: "2026-08-30" },
+    { name: "伊藤 さくら", kana: "いとう さくら", no: "M-0005", phone: "090-5678-9012", visits: 15, last: "2026-09-12" },
+    { name: "渡辺 大輔", kana: "わたなべ だいすけ", no: "M-0006", phone: "080-6789-0123", visits: 6, last: "2026-09-01" },
+    { name: "山本 千夏", kana: "やまもと ちなつ", no: "M-0007", phone: "090-7890-1234", visits: 9, last: "2026-09-08" },
+    { name: "中村 拓也", kana: "なかむら たくや", no: "M-0008", phone: "070-8901-2345", visits: 1, last: "2026-07-22" },
+  ];
+
+  const STEPS = ["依頼", "画面の型", "構成 3 案", "生成とチェック", "最終確認", "決定の記録"];
+
+  const TYPES = [
+    { id: "list", name: "一覧から探して開く", rec: true,
+      desc: "たくさんの中から 1 件を見つけ、選んで中身を見る",
+      reject: "",
+      wire: `<div class="row"><i class="h"></i><i class="btn"></i></div><i class="in"></i><i></i><i></i><i></i><i></i><i></i>` },
+    { id: "dash", name: "数字の概況を見る",
+      desc: "件数や推移を並べ、店の状態をひと目で見る",
+      reject: "電話中に 1 人を探す作業には、数字の概況が要らない",
+      wire: `<i class="h"></i><div class="row"><i class="stat"></i><i class="stat"></i><i class="stat"></i></div><div class="chart"></div><i></i>` },
+    { id: "form", name: "1 件を入力・編集する",
+      desc: "項目を上から埋めて保存する",
+      reject: "探す前に入力欄が並び、目的の会員にたどり着けない",
+      wire: `<i class="h"></i><i style="width:30%"></i><i class="in"></i><i style="width:30%"></i><i class="in"></i><i style="width:30%"></i><i class="in"></i><div class="row"><i class="btn"></i></div>` },
+  ];
+
+  const LAYOUTS = [
+    { id: "A", name: "A 案:検索を最短に",
+      desc: "開いた直後に検索欄。余計な情報を置かない",
+      reject: "情報が少なく、店の状況は別の画面で見ることになる",
+      wire: `<div class="row"><i class="h"></i><i class="btn"></i></div><i class="in"></i><i></i><i></i><i></i><i></i><i></i><i></i>` },
+    { id: "B", name: "B 案:概況つき",
+      desc: "検索の上に会員数などの数字を 3 つ置く",
+      reject: "数字の 3 枚は会員探しに使わず、電話中に目が動く範囲が広がる",
+      wire: `<div class="row"><i class="h"></i><i class="btn"></i></div><div class="row"><i class="stat"></i><i class="stat"></i><i class="stat"></i></div><i class="in"></i><i></i><i></i><i></i>` },
+    { id: "C", name: "C 案:一覧 + 詳細ペイン",
+      desc: "選んだ会員の概要を右に出し、画面を移らずに確認する",
+      reject: "情報量が多く、電話しながらの片手間操作には重い",
+      wire: `<div class="split"><div style="flex:1"><i class="in"></i><i></i><i></i><i></i><i></i><i></i></div><div class="pane"><i class="h" style="width:70%"></i><i></i><i></i><i></i></div></div>` },
+  ];
+
+  const FIXES = [
+    { id: "visits", label: "来店回数の列は要らない" },
+    { id: "phone", label: "電話番号を氏名のすぐ右に" },
+  ];
+
+  // ---- 状態 ----
+  const s = {
+    step: 0, type: null, layout: null, fixed: false, checked: false,
+    fix: null, revised: false, query: "", sel: 0, log: [],
+  };
+  const now = () => new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const record = (what, chosen, rejected) => s.log.push({ t: now(), what, chosen, rejected });
+
+  const $steps = document.getElementById("steps");
+  const $stage = document.getElementById("stage");
+
+  function renderSteps() {
+    $steps.innerHTML = STEPS.map((n, i) =>
+      `<li class="${i < s.step ? "done" : i === s.step ? "now" : ""}"><b>${i + 1}</b>${n}</li>`).join("");
+  }
+
+  // ---- Reservo の画面 ----
+  function columns() {
+    let cols = ["name", "no", "phone", "visits", "last"];
+    if (s.revised && s.fix === "visits") cols = cols.filter((c) => c !== "visits");
+    if (s.revised && s.fix === "phone") cols = ["name", "phone", "no", "visits", "last"];
+    return cols;
+  }
+  const COL_LABEL = { name: "氏名", no: "会員番号", phone: "電話番号", visits: "来店回数", last: "最終来店" };
+
+  function filtered() {
+    const q = s.query.trim().replace(/\s/g, "");
+    if (!q) return MEMBERS;
+    return MEMBERS.filter((m) => (m.name + m.kana + m.phone).replace(/[\s-]/g, "").includes(q.replace(/-/g, "")));
+  }
+
+  function table(cols, rows, selectable) {
+    if (rows.length === 0) {
+      return `<div class="r-empty"><p>該当する会員が見つかりません</p><p class="sub">氏名の一部・かな・電話番号の下 4 桁でも検索できます</p></div>`;
+    }
+    return `<div class="r-scroll"><table class="r-table"><thead><tr>${cols.map((c) => `<th>${COL_LABEL[c]}</th>`).join("")}</tr></thead><tbody>${
+      rows.map((m, i) => `<tr data-i="${MEMBERS.indexOf(m)}" class="${selectable && MEMBERS.indexOf(m) === s.sel ? "sel" : ""}">${
+        cols.map((c) => c === "name" ? `<td><span class="r-link">${m.name}</span></td>` : c === "visits" ? `<td>${m.visits} 回</td>` : `<td>${m[c]}</td>`).join("")
+      }</tr>`).join("")}</tbody></table></div>`;
+  }
+
+  function screen() {
+    const flag = s.checked && !s.fixed;
+    const search = `<div class="${flag ? "flagged" : ""}" id="r-search">${flag ? `<span class="flag-label">色の直書き</span>` : ""}
+      <label class="r-label" for="q">氏名・かな・電話番号で検索</label>
+      <input id="q" class="r-input ${s.fixed ? "" : "raw"}" placeholder="例:さとう / 5678" value="${s.query}"></div>`;
+    const head = `<div class="r-head"><div><h1>会員</h1><p>電話予約の受付中に、会員を見つけて詳細を開きます</p></div><button class="r-btn" type="button">会員を登録</button></div>`;
+    const rows = filtered();
+    let body;
+    if (s.layout === "B") {
+      body = head + `<div class="r-stats"><div class="r-stat"><div class="k">会員数</div><div class="v">1,248</div></div><div class="r-stat"><div class="k">今月の新規</div><div class="v">32</div></div><div class="r-stat"><div class="k">今月の来店</div><div class="v">412</div></div></div>`
+        + search + `<div class="r-card">${table(columns(), rows, false)}</div>`;
+    } else if (s.layout === "C") {
+      const m = MEMBERS[s.sel];
+      const cols = columns().filter((c) => c === "name" || c === "phone");
+      body = head + search + `<div class="r-split"><div class="r-card">${table(cols, rows, true)}</div>
+        <div class="r-card r-detail"><h4>${m.name}</h4><dl><dt>かな</dt><dd>${m.kana}</dd><dt>会員番号</dt><dd>${m.no}</dd><dt>電話番号</dt><dd>${m.phone}</dd><dt>来店回数</dt><dd>${m.visits} 回</dd><dt>最終来店</dt><dd>${m.last}</dd></dl></div></div>`;
+    } else {
+      body = head + search + `<div class="r-card">${table(columns(), rows, false)}</div>`;
+    }
+    return `<div class="browser"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><code>reservo.example/members</code></div>
+      <div class="r"><div class="r-top"><span class="r-logo">Reservo</span><nav class="r-nav"><span>予約</span><span class="on">会員</span><span>設定</span></nav></div>
+      <div class="r-main">${body}</div></div></div>`;
+  }
+
+  function bindScreen() {
+    const q = document.getElementById("q");
+    if (q) q.addEventListener("input", () => {
+      s.query = q.value;
+      const pos = q.selectionStart;
+      render();
+      const q2 = document.getElementById("q");
+      q2.focus(); q2.setSelectionRange(pos, pos);
+    });
+    document.querySelectorAll(".r-split tbody tr").forEach((tr) =>
+      tr.addEventListener("click", () => { s.sel = Number(tr.dataset.i); render(); }));
+  }
+
+  // ---- 各ステップ ----
+  function cardHTML(o, picked) {
+    return `<button type="button" class="card" data-id="${o.id}" aria-pressed="${picked === o.id}">
+      <div class="wire">${o.wire}</div>
+      <h3>${o.name}${o.rec ? `<span class="tag">おすすめ</span>` : ""}</h3>
+      <p class="desc">${o.desc}</p></button>`;
+  }
+  function bindCards(key) {
+    document.querySelectorAll(".card").forEach((b) => b.addEventListener("click", () => { s[key] = b.dataset.id; render(); }));
+  }
+
+  const views = [
+    // 1. 依頼
+    () => `<h2>依頼</h2>
+      <p class="lead">デモの題材は架空の予約管理サービス「Reservo」です。店舗スタッフから、次の依頼が届きました。</p>
+      <div class="bubble req"><p>「会員を探す画面がない。電話予約を受けたスタッフが、会員を見つけて来店履歴を確認したい」</p></div>
+      <div class="bubble ai"><p><span class="who ai">AI</span>作る画面の目的を、次の 1 文にしました。</p>
+        <p style="margin-top:6px"><b>電話対応中の店舗スタッフが、名前や電話番号から目当ての会員を見つけ出す</b></p>
+        <p class="small">来店履歴を見る作業は会員の詳細画面で行うことにして、この画面の目的は「見つけ出す」までにしました。</p></div>
+      <div class="actions"><button class="primary" id="next">この目的で進める</button></div>`,
+    // 2. 画面の型
+    () => `<h2><span class="who you">あなた</span>画面の型を選ぶ</h2>
+      <p class="lead">目的に合いそうな画面の型が 3 つ並んでいます。AI のおすすめはありますが、決めるのはあなたです。</p>
+      <div class="cards">${TYPES.map((o) => cardHTML(o, s.type)).join("")}</div>
+      <div class="actions"><button class="primary" id="next" ${s.type === "list" ? "" : "disabled"}>この型で進める</button>
+        <span class="note">${s.type && s.type !== "list" ? "このデモでは「一覧から探して開く」の続きだけを用意しています" : s.type ? "" : "カードを 1 つクリックしてください"}</span></div>`,
+    // 3. 構成 3 案
+    () => `<h2><span class="who you">あなた</span>構成を 3 案から選ぶ</h2>
+      <p class="lead">同じ型でも、何をどの順に置くかで使い勝手が変わります。色を付ける前のワイヤーで比べてください。どれを選んでも先に進めます。</p>
+      <div class="cards">${LAYOUTS.map((o) => cardHTML(o, s.layout)).join("")}</div>
+      <div class="actions"><button class="primary" id="next" ${s.layout ? "" : "disabled"}>この案で進める</button>
+        <span class="note">${s.layout ? "" : "カードを 1 つクリックしてください"}</span></div>`,
+    // 4. 生成とチェック
+    () => {
+      const items = [
+        { label: "色はデザインシステムのトークンだけを使っている", ng: !s.fixed, detail: "検索欄の枠線に #9aa5a3 を直書き(1 件)" },
+        { label: "デザインシステムにない部品を自作していない", ng: false },
+        { label: "塗りのボタンは画面に 1 つだけ", ng: false },
+        { label: "0 件のときの表示がある", ng: false },
+      ];
+      const list = items.map((it) => {
+        const st = !s.checked ? "wait" : it.ng ? "ng" : "ok";
+        return `<li class="${st}"><span class="mark">${st === "wait" ? "…" : st === "ng" ? "✕" : "✓"}</span><span>${it.label}</span>${st === "ng" ? `<span class="detail">${it.detail}</span>` : ""}</li>`;
+      }).join("");
+      const allOk = s.checked && s.fixed;
+      return `<h2>生成とチェック</h2>
+        <p class="lead"><span class="who ai">AI</span>選んだ型と構成で、Reservo の既存部品を組み合わせて画面を作りました。人が見る前に、AI が機械的なチェックを通します。検索欄に「さとう」や「5678」と入れると絞り込めます。該当しない文字を入れると、0 件の表示も確かめられます。</p>
+        <div class="gen">${screen()}
+          <div class="checks"><h3>機械チェック</h3><ul>${list}</ul>
+            <div class="actions">${
+              !s.checked ? `<button class="primary" id="run">チェックを実行</button>`
+              : !s.fixed ? `<button class="primary" id="fix">AI に直させて再チェック</button>`
+              : `<button class="primary" id="next">あなたの確認へ進む</button>`}</div>
+            ${allOk ? `<p class="note" style="margin:10px 0 0">機械で判定できる項目がすべて通ったので、人の確認に回します。</p>` : ""}
+          </div></div>`;
+    },
+    // 5. 最終確認
+    () => `<h2><span class="who you">あなた</span>最終確認</h2>
+      <p class="lead">${s.revised ? "修正を反映しました。もう一度確かめてください。" : "実際の幅で画面を見て、このまま採用するか、直してほしい点を伝えるかを決めてください。"}</p>
+      ${screen()}
+      <div class="review">
+        <div class="actions" style="margin-top:0"><button class="primary" id="ok">この画面で採用する</button>
+          <button class="ghost" id="ask" ${s.revised ? "disabled" : ""}>修正を依頼する</button></div>
+        ${s.asking ? `<p class="note" style="margin:12px 0 0">直してほしい点を 1 つ選んでください。</p>
+          <div class="chips">${FIXES.map((f) => `<button type="button" class="chip" data-id="${f.id}" aria-pressed="${s.fix === f.id}">${f.label}</button>`).join("")}</div>
+          <button class="primary" id="send" ${s.fix ? "" : "disabled"}>この内容で直してもらう</button>` : ""}
+      </div>`,
+    // 6. 決定の記録
+    () => `<h2>決定の記録</h2>
+      <p class="lead">あなたがクリックで決めた内容が、選ばなかった案の理由と一緒に残ります。あとで「なぜこの画面になったか」を聞かれたら、この記録で答えられます。</p>
+      <div class="tablewrap"><table class="log"><thead><tr><th>時刻</th><th>決めたこと</th><th>選んだもの</th></tr></thead><tbody>${
+        s.log.map((l) => `<tr><td class="time">${l.t}</td><td>${l.what}</td><td>${l.chosen}${l.rejected.map((r) => `<p class="rej">選ばなかった:${r}</p>`).join("")}</td></tr>`).join("")
+      }</tbody></table></div>
+      <div class="actions"><button class="ghost" id="restart">最初からやり直す</button>
+        <span class="note">別の構成案を選ぶと、生成される画面と記録が変わります。</span></div>`,
+  ];
+
+  function go(n) {
+    s.step = n; render();
+    // ブログの枠に埋め込まれたときは、枠の先頭まで戻す
+    try { if (window.frameElement) window.frameElement.scrollIntoView({ block: "start", behavior: "smooth" }); else window.scrollTo(0, 0); } catch (e) { window.scrollTo(0, 0); }
+  }
+
+  function render() {
+    renderSteps();
+    $stage.innerHTML = views[s.step]();
+    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener("click", fn); };
+    if (s.step === 0) on("next", () => { record("画面の目的", "電話対応中のスタッフが、名前や電話番号から会員を見つけ出す", []); go(1); });
+    if (s.step === 1) { bindCards("type"); on("next", () => {
+      record("画面の型", "一覧から探して開く", TYPES.filter((t) => t.id !== "list").map((t) => `${t.name} — ${t.reject}`)); go(2); }); }
+    if (s.step === 2) { bindCards("layout"); on("next", () => {
+      const c = LAYOUTS.find((l) => l.id === s.layout);
+      record("構成", c.name, LAYOUTS.filter((l) => l.id !== s.layout).map((l) => `${l.name} — ${l.reject}`)); go(3); }); }
+    if (s.step === 3) {
+      bindScreen();
+      on("run", () => { s.checked = true; render(); });
+      on("fix", () => { s.fixed = true; record("機械チェック", "色の直書き 1 件を AI が直し、4 項目すべて通過", []); render(); });
+      on("next", () => go(4));
+    }
+    if (s.step === 4) {
+      bindScreen();
+      on("ask", () => { s.asking = true; render(); });
+      document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { s.fix = b.dataset.id; render(); }));
+      on("send", () => { s.revised = true; s.asking = false; record("修正の依頼", FIXES.find((f) => f.id === s.fix).label, []); render(); });
+      on("ok", () => { record("最終確認", s.revised ? "修正後の画面で採用" : "そのまま採用", []); go(5); });
+    }
+    if (s.step === 5) on("restart", () => {
+      Object.assign(s, { step: 0, type: null, layout: null, fixed: false, checked: false, fix: null, revised: false, asking: false, query: "", sel: 0, log: [] });
+      render();
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
