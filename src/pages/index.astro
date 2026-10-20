@@ -16,9 +16,6 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
 		<style>
-			main {
-				width: 720px;
-			}
 			ul {
 				list-style-type: none;
 				margin: 0;

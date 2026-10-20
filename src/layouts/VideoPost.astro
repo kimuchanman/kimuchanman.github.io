@@ -17,7 +17,7 @@ const src = video ? `/videos/${video}.html` : `/${embed}.html`;
 		<style>
 			main {
 				width: calc(100% - 2em);
-				max-width: 1100px;
+				max-width: var(--content-width);
 				margin: auto;
 				padding: 2em 1em;
 			}
@@ -46,8 +46,6 @@ const src = video ? `/videos/${video}.html` : `/${embed}.html`;
 				color: rgb(var(--gray));
 			}
 			.prose {
-				width: 720px;
-				max-width: 100%;
 				margin: auto;
 				color: rgb(var(--gray-dark));
 			}

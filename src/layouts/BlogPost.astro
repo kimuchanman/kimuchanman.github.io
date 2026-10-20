@@ -30,7 +30,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				box-shadow: var(--box-shadow);
 			}
 			.prose {
-				width: 720px;
+				width: var(--content-width);
 				max-width: calc(100% - 2em);
 				margin: auto;
 				padding: 1em;
@@ -73,16 +73,13 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			.prose :global(th) {
 				background: rgb(var(--gray-light), 40%);
 			}
-			/* 本文に埋め込む解説動画。プレイヤーは横幅が要るので本文の 720px からはみ出して広げる */
+			/* 本文に埋め込む解説動画。本文と同じ幅で置く */
 			.prose :global(.video-embed) {
-				position: relative;
-				left: 50%;
-				transform: translateX(-50%);
-				width: min(1100px, calc(100vw - 2em));
 				margin: 1.5em 0;
 			}
 			.prose :global(.video-embed iframe) {
 				display: block;
+				box-sizing: border-box;
 				width: 100%;
 				height: 620px;
 				border: 1px solid #ddd;
@@ -97,14 +94,11 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			}
 			/* 本文に埋め込む対話的な図(public/maps/)。中身が 100vh で組まれているので高さは固定にする */
 			.prose :global(.map-embed) {
-				position: relative;
-				left: 50%;
-				transform: translateX(-50%);
-				width: min(1100px, calc(100vw - 2em));
 				margin: 1.5em 0;
 			}
 			.prose :global(.map-embed iframe) {
 				display: block;
+				box-sizing: border-box;
 				width: 100%;
 				height: min(820px, 85vh);
 				border: 1px solid #ddd;
