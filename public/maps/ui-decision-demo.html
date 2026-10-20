@@ -225,10 +225,16 @@
       wire: `<div class="split"><div style="flex:1"><i class="in"></i><i></i><i></i><i></i><i></i><i></i></div><div class="pane"><i class="h" style="width:70%"></i><i></i><i></i><i></i></div></div>` },
   ];
 
-  const FIXES = [
+  // 修正依頼の候補。詳細ペインの案(C)は一覧の列が少ないので、別の候補を出す
+  const FIXES_TABLE = [
     { id: "visits", label: "来店回数の列は要らない" },
     { id: "phone", label: "電話番号を氏名のすぐ右に" },
   ];
+  const FIXES_SPLIT = [
+    { id: "kana", label: "一覧にかなも出してほしい" },
+    { id: "wide", label: "詳細ペインをもう少し広く" },
+  ];
+  const fixes = () => (s.layout === "C" ? FIXES_SPLIT : FIXES_TABLE);
 
   // ---- 状態 ----
   const s = {
@@ -253,12 +259,14 @@
     if (s.revised && s.fix === "phone") cols = ["name", "phone", "no", "visits", "last"];
     return cols;
   }
-  const COL_LABEL = { name: "氏名", no: "会員番号", phone: "電話番号", visits: "来店回数", last: "最終来店" };
+  const COL_LABEL = { kana: "かな", name: "氏名", no: "会員番号", phone: "電話番号", visits: "来店回数", last: "最終来店" };
 
   function filtered() {
-    const q = s.query.trim().replace(/\s/g, "");
+    const q = s.query.replace(/[\s-]/g, "");
     if (!q) return MEMBERS;
-    return MEMBERS.filter((m) => (m.name + m.kana + m.phone).replace(/[\s-]/g, "").includes(q.replace(/-/g, "")));
+    // 数字だけなら電話番号の末尾で照合する(下 4 桁で探す使い方に合わせる)
+    if (/^\d+$/.test(q)) return MEMBERS.filter((m) => m.phone.replace(/-/g, "").endsWith(q));
+    return MEMBERS.filter((m) => (m.name + m.kana).replace(/\s/g, "").includes(q));
   }
 
   function table(cols, rows, selectable) {
@@ -284,8 +292,9 @@
         + search + `<div class="r-card">${table(columns(), rows, false)}</div>`;
     } else if (s.layout === "C") {
       const m = MEMBERS[s.sel];
-      const cols = columns().filter((c) => c === "name" || c === "phone");
-      body = head + search + `<div class="r-split"><div class="r-card">${table(cols, rows, true)}</div>
+      const cols = s.revised && s.fix === "kana" ? ["name", "kana", "phone"] : ["name", "phone"];
+      const wide = s.revised && s.fix === "wide" ? ` style="grid-template-columns:minmax(0,1fr) 300px"` : "";
+      body = head + search + `<div class="r-split"${wide}><div class="r-card">${table(cols, rows, true)}</div>
         <div class="r-card r-detail"><h4>${m.name}</h4><dl><dt>かな</dt><dd>${m.kana}</dd><dt>会員番号</dt><dd>${m.no}</dd><dt>電話番号</dt><dd>${m.phone}</dd><dt>来店回数</dt><dd>${m.visits} 回</dd><dt>最終来店</dt><dd>${m.last}</dd></dl></div></div>`;
     } else {
       body = head + search + `<div class="r-card">${table(columns(), rows, false)}</div>`;
@@ -372,7 +381,7 @@
         <div class="actions" style="margin-top:0"><button class="primary" id="ok">この画面で採用する</button>
           <button class="ghost" id="ask" ${s.revised ? "disabled" : ""}>修正を依頼する</button></div>
         ${s.asking ? `<p class="note" style="margin:12px 0 0">直してほしい点を 1 つ選んでください。</p>
-          <div class="chips">${FIXES.map((f) => `<button type="button" class="chip" data-id="${f.id}" aria-pressed="${s.fix === f.id}">${f.label}</button>`).join("")}</div>
+          <div class="chips">${fixes().map((f) => `<button type="button" class="chip" data-id="${f.id}" aria-pressed="${s.fix === f.id}">${f.label}</button>`).join("")}</div>
           <button class="primary" id="send" ${s.fix ? "" : "disabled"}>この内容で直してもらう</button>` : ""}
       </div>`,
     // 6. 決定の記録
@@ -411,7 +420,7 @@
       bindScreen();
       on("ask", () => { s.asking = true; render(); });
       document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { s.fix = b.dataset.id; render(); }));
-      on("send", () => { s.revised = true; s.asking = false; record("修正の依頼", FIXES.find((f) => f.id === s.fix).label, []); render(); });
+      on("send", () => { s.revised = true; s.asking = false; record("修正の依頼", fixes().find((f) => f.id === s.fix).label, []); render(); });
       on("ok", () => { record("最終確認", s.revised ? "修正後の画面で採用" : "そのまま採用", []); go(5); });
     }
     if (s.step === 5) on("restart", () => {
