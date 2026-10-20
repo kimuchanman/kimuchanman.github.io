@@ -8,6 +8,13 @@ pubDate: '2026-10-20'
 
 この記事はその全体像です。部品の大半は 2026-10-15 から 17 日に作り、運用は数日しかしていません。そのため節ごとに、作ったものと、まだ測っていないものを分けて書きます。
 
+同じ内容を解説動画(7 分)にもしています。文章より先に見ても、あとで見ても構いません。
+
+<figure class="video-embed">
+<iframe src="/videos/human-llm-division.html" title="人間と LLM の共存の仕組み(解説動画 6:57)" scrolling="no" loading="lazy"></iframe>
+<figcaption><a href="/videos/human-llm-division.html" target="_blank" rel="noopener">動画だけを別タブで開く</a>(台本と出典つき)</figcaption>
+</figure>
+
 ## 全体像
 
 人間と LLM の間に外部の記録を挟み、三者で分担します。
@@ -323,3 +330,11 @@ flowchart LR
 - Anderson & Lebiere (1998) The Atomic Components of Thought. Lawrence Erlbaum(ACT-R の base-level activation)
 - Anderson & Schooler (1991) Reflections of the environment in memory. Psychological Science 2(6)
 - McClelland, McNaughton & O'Reilly (1995) Why there are complementary learning systems in the hippocampus and neocortex. Psychological Review 102(3)
+
+## 動画の出典
+
+- この記事の本文と、human-llm-coexistence リポジトリの notes/ 7 本(2026-10-15〜17。実測値と閾値の出どころ)
+- Anderson & Lebiere (1998) The Atomic Components of Thought(ACT-R の base-level activation)
+- McClelland, McNaughton & O'Reilly (1995) Why there are complementary learning systems in the hippocampus and neocortex. Psychological Review 102(3)
+
+音声は VOICEVOX:ずんだもん / VOICEVOX:四国めたん、イラストは VOICEVOX 公式(© SSS LLC)です。
