@@ -61,5 +61,6 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 - 記事を書く: `src/content/blog/<slug>.md` を置いて main に push する
 - 動画を足す: `public/videos/<slug>.html`(favicon の link を足す)を置き、同じ内容の文章記事があればその本文に埋め込む。無ければ `src/content/blog/video-<slug>.md` を置く
 - 図を足す: `public/maps/<slug>.html`(doctype・charset・favicon の link 付き)と、`embed` を書いた記事を置く
+- ゲームを足す: `public/games/<slug>.html`(doctype・charset・favicon の link 付き)と、`embed: 'games/<slug>'` を書いた記事を置く。一覧に「ゲーム」ラベルが付く
 - 確認する: `pnpm build` が通ること、Mermaid を使った記事はブラウザで図が出ること
 - 費用: GitHub Pages と Actions は公開リポジトリでは無料。上限はサイト 1 GB、転送 月 100 GB
