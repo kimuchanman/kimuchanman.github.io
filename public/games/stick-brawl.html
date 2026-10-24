@@ -180,7 +180,11 @@
     // 武器を持つ敵
     e_staff: { dur: .75, a: .45, b: .55, reach: 78,  h: 65, dmg: 10, kx: 280, ky: -100, stun: .35, lunge: 60,  kind: 'swing' },
     e_slash: { dur: .55, a: .3,  b: .38, reach: 70,  h: 70, dmg: 10, kx: 240, ky: -60,  stun: .3,  lunge: 120, kind: 'swing' },
-    b_staff: { dur: .95, a: .55, b: .68, reach: 95,  h: 60, dmg: 16, kx: 500, ky: -300, stun: .55, lunge: 80,  kind: 'slam', freeze: .1 },
+    b_staff: { dur: .95, a: .55, b: .68, reach: 95,  h: 60, dmg: 16, kx: 500, ky: -300, stun: .55, lunge: 80,  kind: 'slam', freeze: .1, shoot: 'shock' },
+    // 飛び道具と飛びかかり。reach が 0 の攻撃は殴りの当たり判定を持たない
+    bow:     { dur: 1,   a: .7,  b: .72, reach: 0,   h: 0,  dmg: 0,  kx: 0,   ky: 0,    stun: 0,   lunge: 0,   kind: 'bow', shoot: 'arrow' },
+    leap:    { dur: 1.2, a: .35, b: 1.2, reach: 42,  h: 50, dmg: 12, kx: 300, ky: -200, stun: .45, lunge: 0,   kind: 'leap', leap: true },
+    b_wave:  { dur: .8,  a: .45, b: .5,  reach: 0,   h: 0,  dmg: 0,  kx: 0,   ky: 0,    stun: 0,   lunge: 0,   kind: 'swing', shoot: 'wave' },
     b_sword: { dur: .8,  a: .45, b: .56, reach: 100, h: 65, dmg: 18, kx: 500, ky: -280, stun: .55, lunge: 140, kind: 'swing', freeze: .1 },
   };
   // キック・アッパー・空中キックは盾を崩せる
@@ -197,29 +201,36 @@
     staffer:{ hp: 40,  speed: 110, scale: 1,    color: '#2b7a3d', atk: 'e_staff', score: 150,  cd: [1, 1.8], weapon: 'staff' },
     shield: { hp: 45,  speed: 90,  scale: 1,    color: '#1f5f8b', atk: 'jab',     score: 200,  cd: [1, 1.8], shield: true },
     blade:  { hp: 35,  speed: 150, scale: 1,    color: '#8b1f5f', atk: 'e_slash', score: 200,  cd: [.8, 1.4], weapon: 'sword' },
+    archer: { hp: 20,  speed: 120, scale: 1,    color: '#7a6420', atk: 'bow',     score: 150,  cd: [1.6, 2.6], weapon: 'bow', ranged: true },
+    leaper: { hp: 25,  speed: 160, scale: .95,  color: '#a0522d', atk: 'leap',    score: 200,  cd: [1.4, 2.4] },
     boss:   { hp: 200, speed: 105, scale: 1.6,  color: '#3b3b3b', atk: 'heavy',   score: 1000, cd: [.8, 1.5], heavy: true, boss: true },
     boss2:  { hp: 260, speed: 105, scale: 1.6,  color: '#2d4a2d', atk: 'b_staff', score: 1500, cd: [.8, 1.5], heavy: true, boss: true, weapon: 'staff' },
     boss3:  { hp: 320, speed: 115, scale: 1.6,  color: '#3a2a4a', atk: 'b_sword', score: 2000, cd: [.7, 1.3], heavy: true, boss: true, weapon: 'sword' },
   };
   // areas: カメラの左端が x に来たら画面を止め、list の敵を左右から出す
+  // areas: カメラの左端が x に来たら画面を止め、list の敵を左右から出す。drop は上から降らせる
+  // diff: near は同時に殴りに来る数、cd は敵の攻撃間隔の倍率、dmg は受けるダメージの倍率
   const STAGES = [
-    { name: '街', theme: 'city', weapon: 'fist', areas: [
+    { name: '街', theme: 'city', weapon: 'fist', diff: { near: 2, cd: 1, dmg: 1 },
+      tip: 'Z でパンチ、X でキック', areas: [
       { x: 800,  list: ['grunt', 'grunt', 'grunt'] },
       { x: 1900, list: ['grunt', 'fast', 'grunt', 'fast'] },
       { x: 3000, list: ['big', 'grunt', 'fast', 'grunt'] },
       { x: 3900, list: ['boss', 'grunt', 'grunt'] },
     ] },
-    { name: '森', theme: 'forest', weapon: 'staff', areas: [
-      { x: 800,  list: ['grunt', 'staffer', 'grunt', 'fast'] },
-      { x: 1900, list: ['staffer', 'fast', 'staffer', 'fast'] },
-      { x: 3000, list: ['big', 'staffer', 'fast', 'staffer', 'grunt'] },
-      { x: 3900, list: ['boss2', 'staffer', 'grunt'] },
+    { name: '森', theme: 'forest', weapon: 'staff', diff: { near: 3, cd: .85, dmg: 1.2 }, logs: true,
+      tip: '棒を手に入れた。丸太はジャンプでかわすか、キックで壊す', areas: [
+      { x: 800,  list: ['grunt', 'archer', 'staffer', 'leaper'] },
+      { x: 1900, list: ['leaper', 'staffer', 'leaper', 'staffer', 'fast'], drop: true },
+      { x: 3000, list: ['archer', 'big', 'leaper', 'archer', 'staffer'] },
+      { x: 3900, list: ['boss2', 'archer', 'staffer', 'leaper'] },
     ] },
-    { name: '城', theme: 'castle', weapon: 'sword', areas: [
-      { x: 800,  list: ['shield', 'grunt', 'staffer', 'grunt'] },
-      { x: 1900, list: ['shield', 'blade', 'shield', 'fast'] },
-      { x: 3000, list: ['big', 'shield', 'blade', 'staffer', 'blade'] },
-      { x: 3900, list: ['boss3', 'shield', 'blade'] },
+    { name: '城', theme: 'castle', weapon: 'sword', diff: { near: 3, cd: .75, dmg: 1.35 }, spikes: [1350, 2250, 2620, 3450, 4330, 4620],
+      tip: '剣を手に入れた。床のトゲが赤く光ったら離れる', areas: [
+      { x: 800,  list: ['shield', 'archer', 'blade', 'archer'] },
+      { x: 1900, list: ['shield', 'blade', 'shield', 'archer', 'leaper', 'blade'] },
+      { x: 3000, list: ['big', 'shield', 'archer', 'blade', 'archer', 'leaper'] },
+      { x: 3900, list: ['boss3', 'shield', 'archer'] },
     ] },
   ];
   const areas = () => STAGES[game.stage].areas;
@@ -230,7 +241,7 @@
   // ---- 状態 ----
   const game = { mode: 'title', paused: false, time: 0, playT: 0, score: 0, kills: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0, clearT: 0,
     stage: 0, stageScore: 0, stageKills: 0, totalT: 0, banner: 0 };
-  let player, enemies, parts, items, spawnQ, uid = 0;
+  let player, enemies, parts, items, spawnQ, projs = [], uid = 0;
 
   function fighter(o) {
     return Object.assign({ id: ++uid, x: 0, y: GY, vx: 0, vy: 0, f: 1, state: 'idle', t: 0, ph: 0, inv: 0, stun: 0, atk: null, hitSet: null, lunged: false, air: false, scale: 1 }, o);
@@ -252,7 +263,7 @@
     game.stage = i; game.stageScore = game.score; game.stageKills = game.kills;
     player = makePlayer();
     player.weapon = STAGES[i].weapon;
-    enemies = []; parts = []; items = []; spawnQ = [];
+    enemies = []; parts = []; items = []; spawnQ = []; projs = []; game.logT = 3;
     Object.assign(game, { mode: 'play', paused: false, playT: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0, banner: 2.5 });
   }
   function retryStage() {
@@ -283,11 +294,23 @@
 
   // ---- 攻撃の当たり判定 ----
   function attackTick(F, A, targets) {
-    if (!F.lunged && F.t >= A.a) { F.lunged = true; if (A.lunge) F.vx = F.f * A.lunge; }
-    if (F.t < A.a || F.t > A.b) return;
+    if (!F.lunged && F.t >= A.a) {
+      F.lunged = true;
+      if (A.lunge) F.vx = F.f * A.lunge;
+      if (A.shoot) shoot(A.shoot, F);
+      if (A.leap) { F.vy = -620; F.air = true; F.vx = F.f * Math.max(220, Math.min(480, Math.abs(player.x - F.x) / .65)); }
+    }
+    if (F.t < A.a || F.t > A.b || !A.reach) return;
     const s = F.scale;
     const x0 = F.x + F.f * 8 * s, x1 = F.x + F.f * A.reach * s, hy = F.y - A.h * s;
     const lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+    // 矢と丸太は攻撃で弾ける。パンチは高い矢、キックは低い丸太に届く
+    if (F.player) for (const q of projs) {
+      if (!q.breakable || q.dead || q.x + q.w < lo || q.x - q.w > hi || Math.abs(q.y - hy) > q.h + 24) continue;
+      q.dead = true; game.score += 20;
+      spark(q.x, q.y, F.f, '#8b5a2b');
+      parts.push({ kind: 'text', x: q.x, y: q.y - 24, vx: 0, vy: -50, life: .6, max: .6, text: 'はじいた', color: '#555' });
+    }
     for (const T of targets) {
       if (T.state === 'dead' || F.hitSet.has(T.id) || T.inv > 0) continue;
       const ts = T.scale;
@@ -308,7 +331,13 @@
       parts.push({ kind: 'text', x: T.x, y: T.y - 110, vx: 0, vy: -50, life: .6, max: .6, text: 'ガード', color: '#1f5f8b' });
       return;
     }
-    T.hp -= A.dmg;
+    T.hp -= T.player ? Math.round(A.dmg * STAGES[game.stage].diff.dmg) : A.dmg;
+    if (T.type === 'boss3' && !T.rage && T.hp > 0 && T.hp < T.max / 2) {
+      T.rage = true;
+      spawnQ.push({ type: 'blade', delay: .6, side: -1 }, { type: 'blade', delay: 1.4, side: 1 });
+      parts.push({ kind: 'text', x: T.x, y: T.y - 170, vx: 0, vy: -20, life: 1.6, max: 1.6, text: '本気を出した!', color: '#3a2a4a' });
+      game.shake = 12;
+    }
     const k = T.T && T.T.boss ? 0.35 : T.T && T.T.heavy ? 0.6 : 1;
     T.vx = F.f * A.kx * k;
     if (A.ky) { T.vy = A.ky * k; T.air = true; }
@@ -387,31 +416,92 @@
       const A = ATK[E.atk];
       attackTick(E, A, [player]);
       if (A.dashV && E.t >= A.a && E.t < A.b) E.vx = E.f * A.dashV; else fric(E, dt);
-      if (E.t >= A.dur) { setState(E, 'idle'); E.cd = rand(...E.T.cd); }
-      physics(E, dt); return;
+      physics(E, dt);
+      // 飛びかかりは着地で終わる
+      if (A.leap ? (E.t > A.a + .15 && !E.air) || E.t > 2.5 : E.t >= A.dur) {
+        setState(E, 'idle');
+        E.cd = rand(...E.T.cd) * STAGES[game.stage].diff.cd * (E.rage ? .6 : 1);
+      }
+      return;
     }
     E.cd -= dt;
+    if (E.spikeT > 0) E.spikeT -= dt;
     const dx = player.x - E.x, adx = Math.abs(dx);
     E.f = dx >= 0 ? 1 : -1;
     const reach = ATK[E.T.atk].reach * E.scale + 10;
-    // 近くの 2 体だけが殴りに来て、残りは間合いの外で待つ
-    const want = near ? reach * 0.8 : 170 + (E.id % 3) * 35;
-    let mv = 0;
-    if (player.state !== 'dead') {
+    const go = (name) => { startAttack(E, name); physics(E, dt); };
+    let mv = 0, want;
+    if (E.T.ranged) {
+      // 弓の敵は距離を取り、画面の中にいるときだけ撃つ
+      want = 330 + (E.id % 3) * 30;
+      const lo = game.camX + 30, hi = game.camX + W - 30;
+      if (adx > want + 40) mv = E.f; else if (adx < want - 60) mv = -E.f;
+      if (E.x < lo) mv = 1; else if (E.x > hi) mv = -1;
+      if (E.cd <= 0 && E.x > lo - 5 && E.x < hi + 5 && player.state !== 'dead') return go('bow');
+    } else if (player.state !== 'dead') {
+      // 近くの数体だけが攻めてきて、残りは間合いの外で待つ
+      const leap = E.T.atk === 'leap';
+      want = near ? (leap ? 200 : reach * .8) : 170 + (E.id % 3) * 35;
       if (adx > want + 8) mv = E.f;
-      else if (!near && adx < want - 30) mv = -E.f;
-      if (near && adx <= reach && E.cd <= 0 && Math.abs(player.y - E.y) < 80) {
-        let name = E.T.atk;
-        if (E.T.boss && (E.alt++ % 2 === 1)) name = 'dash';
-        startAttack(E, name);
-        physics(E, dt); return;
+      else if ((!near || leap) && adx < want - 30) mv = -E.f;
+      if (near && E.cd <= 0) {
+        if (leap && adx > 120 && adx < 300) return go('leap');
+        if (E.rage && adx > reach + 20 && adx < 520) return go('b_wave');
+        if (!leap && adx <= reach && Math.abs(player.y - E.y) < 80) {
+          let name = E.T.atk;
+          if (E.T.boss) { const seq = E.rage ? [E.T.atk, 'b_wave', 'dash'] : [E.T.atk, 'dash']; name = seq[E.alt++ % seq.length]; }
+          return go(name);
+        }
       }
     }
-    E.vx = mv * E.T.speed * (mv === -E.f ? 0.6 : 1);
+    E.vx = mv * E.T.speed * (E.rage ? 1.35 : 1) * (mv === -E.f ? 0.6 : 1);
     if (mv) E.ph += dt * E.T.speed / 20;
     const s = mv ? 'run' : 'idle';
     if (E.state !== s) setState(E, s);
     physics(E, dt);
+  }
+
+  // ---- 飛び道具と仕掛け ----
+  function shoot(kind, F) {
+    if (kind === 'arrow') projs.push({ kind, x: F.x + F.f * 24 * F.scale, y: F.y - 72 * F.scale, vx: F.f * 520, w: 14, h: 4, dmg: 8, breakable: true, life: 3 });
+    else if (kind === 'wave') projs.push({ kind, x: F.x + F.f * 60, y: GY - 38, vx: F.f * 430, w: 14, h: 26, dmg: 14, life: 3 });
+    else if (kind === 'shock') {
+      for (const d of [1, -1]) projs.push({ kind, x: F.x + d * 70 * F.scale, y: GY - 12, vx: d * 400, w: 12, h: 12, dmg: 10, life: 1.6 });
+      game.shake = Math.max(game.shake, 8); dust(F.x + F.f * 90 * F.scale, 8);
+    } else if (kind === 'log') projs.push({ kind, x: F.x, y: GY - 16, vx: -300, w: 16, h: 16, dmg: 10, breakable: true, life: 8, rot: 0 });
+  }
+  // 仕掛けの攻撃は向きと位置だけを持つ仮の攻撃者として当てる
+  const trap = (x, dir) => ({ x, f: dir, vx: 0 });
+  function updProjs(dt) {
+    const P = player;
+    for (const q of projs) {
+      q.x += q.vx * dt; q.life -= dt;
+      if (q.rot !== undefined) q.rot += q.vx * dt / 16;
+      if (q.dead || P.state === 'dead' || P.inv > 0) continue;
+      if (Math.abs(q.x - P.x) < q.w + 12 && q.y + q.h > P.y - 95 && q.y - q.h < P.y) {
+        q.dead = true;
+        hit(trap(q.x, Math.sign(q.vx) || 1), P, { dmg: q.dmg, kx: 240, ky: -200, stun: .4, freeze: .05, brk: true }, P.x, q.y);
+      }
+    }
+    projs = projs.filter((q) => !q.dead && q.life > 0 && q.x > game.camX - 100 && q.x < game.camX + W + 100);
+  }
+  // トゲは 3.2 秒周期で、0.8 秒光ってから 0.8 秒出る
+  const spikeState = (i) => { const c = (game.playT + i * 1.1) % 3.2; return c < .8 ? 'warn' : c < 1.6 ? 'up' : 'down'; };
+  function updHazards(dt) {
+    const st = STAGES[game.stage];
+    if (st.logs && !game.lock && game.areaIdx < st.areas.length && game.camX > 100 && (game.logT -= dt) <= 0) {
+      shoot('log', { x: game.camX + W + 30 });
+      game.logT = rand(2.2, 3.8);
+    }
+    (st.spikes || []).forEach((x, i) => {
+      if (spikeState(i) !== 'up') return;
+      for (const F of [player, ...enemies]) {
+        if (F.state === 'dead' || F.air || Math.abs(F.x - x) > 26) continue;
+        if (F.player ? F.inv > 0 : F.spikeT > 0) continue;
+        if (!F.player) F.spikeT = 1;
+        hit(trap(x, F.x >= x ? 1 : -1), F, { dmg: F.player ? 12 : 20, kx: 260, ky: -420, stun: .5, freeze: .05, brk: true }, F.x, GY - 20);
+      }
+    });
   }
 
   // ---- 演出 ----
@@ -452,19 +542,23 @@
     if (!game.lock && game.areaIdx < A.length && game.camX >= A[game.areaIdx].x) {
       game.lock = A[game.areaIdx];
       game.camX = game.lock.x;
-      game.lock.list.forEach((type, i) => spawnQ.push({ type, delay: 0.4 + i * 0.8, side: i % 2 ? -1 : 1 }));
+      game.lock.list.forEach((type, i) => spawnQ.push({ type, delay: 0.4 + i * 0.8, side: i % 2 ? -1 : 1, drop: game.lock.drop }));
       if (game.lock.list[0].startsWith('boss')) spawnQ[0].side = 1;
     }
     player.x = Math.max(game.camX + 20, Math.min(game.camX + W - 20, player.x));
 
     for (const q of spawnQ) q.delay -= dt;
     for (const q of spawnQ.filter((q) => q.delay <= 0)) {
-      enemies.push(makeEnemy(q.type, q.side > 0 ? game.camX + W + 50 : game.camX - 50));
+      if (q.drop) {
+        const e = makeEnemy(q.type, game.camX + rand(150, W - 150));
+        e.y = -40; e.air = true;
+        enemies.push(e);
+      } else enemies.push(makeEnemy(q.type, q.side > 0 ? game.camX + W + 50 : game.camX - 50));
     }
     spawnQ = spawnQ.filter((q) => q.delay > 0);
 
     const alive = enemies.filter((e) => e.state !== 'dead');
-    const near = new Set(alive.slice().sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x)).slice(0, 2));
+    const near = new Set(alive.filter((e) => !e.T.ranged).sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x)).slice(0, STAGES[game.stage].diff.near));
     for (const e of alive) if (e.T.boss) near.add(e);
     for (const e of enemies) updEnemy(e, dt, near.has(e));
     // 敵同士が重ならないように押し合う
@@ -473,6 +567,8 @@
       if (Math.abs(d) < min) { const push = (min - Math.abs(d)) / 2 * (d >= 0 ? 1 : -1); a.x -= push * .5; b.x += push * .5; }
     }
     enemies = enemies.filter((e) => e.deadT < 1.6);
+    updProjs(dt);
+    updHazards(dt);
 
     if (game.lock && !spawnQ.length && !enemies.some((e) => e.state !== 'dead')) {
       game.lock = null; game.areaIdx++;
@@ -580,6 +676,14 @@
         p.lean = t < A.a ? -.15 : .35;
         break;
       }
+      case 'bow':
+        p.armA = [1.55, .05]; p.armB = [1.45, 2.4 * Math.min(1, t / A.a)];
+        p.legA = [.3, -.1]; p.legB = [-.3, -.1];
+        break;
+      case 'leap':
+        if (t < A.a) { p.legA = [.9, -1.8]; p.legB = [-.5, -1.4]; p.armA = [-.5, 1]; p.armB = [-.7, 1]; p.lean = .2; }
+        else { p.legA = [1.3, .1]; p.legB = [-.3, -1.2]; p.armA = [2, .5]; p.armB = [-.5, 1]; p.lean = -.2; p.hipY = -44; }
+        break;
       // 武器の振り。u は当たり判定が出ている間の進み具合
       case 'swing': case 'rise': case 'slam': {
         const u = t < A.a ? 0 : Math.min(1, (t - A.a) / (A.b - A.a));
@@ -601,7 +705,7 @@
     ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2);
     return [x2, y2, a1 + a2];
   }
-  const WLEN = { staff: 50, sword: 44 };
+  const WLEN = { staff: 50, sword: 44, bow: 20 };
   // 武器は手の位置から前腕の向きに伸ばす。座標は棒人間のローカル座標
   function drawWeapon(kind, hx, hy, ang) {
     const dx = Math.sin(ang), dy = Math.cos(ang);
@@ -610,6 +714,15 @@
     if (kind === 'staff') {
       ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(...at(-22)); ctx.lineTo(...at(WLEN.staff)); ctx.stroke();
+    } else if (kind === 'bow') {
+      const cx = hx - dx * 6, cy = hy - dy * 6, phi = Math.atan2(dy, dx);
+      ctx.strokeStyle = '#6b4a2b'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, 20, phi - 1.1, phi + 1.1); ctx.stroke();
+      ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(phi - 1.1) * 20, cy + Math.sin(phi - 1.1) * 20);
+      ctx.lineTo(cx + Math.cos(phi + 1.1) * 20, cy + Math.sin(phi + 1.1) * 20);
+      ctx.stroke();
     } else if (kind === 'sword') {
       ctx.strokeStyle = '#8a96a3'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(...at(5)); ctx.lineTo(...at(WLEN.sword)); ctx.stroke();
@@ -770,6 +883,50 @@
       ctx.fillStyle = '#333'; ctx.fillText('GOAL', gx, GY + 30);
     }
   }
+  function drawProjs() {
+    for (const q of projs) {
+      const x = q.x - game.camX, d = Math.sign(q.vx) || 1;
+      if (q.kind === 'arrow') {
+        ctx.strokeStyle = '#5a4a2a'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(x - d * 16, q.y); ctx.lineTo(x + d * 14, q.y); ctx.stroke();
+        ctx.fillStyle = '#333';
+        ctx.beginPath(); ctx.moveTo(x + d * 20, q.y); ctx.lineTo(x + d * 12, q.y - 4); ctx.lineTo(x + d * 12, q.y + 4); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x - d * 16, q.y); ctx.lineTo(x - d * 22, q.y - 5); ctx.moveTo(x - d * 16, q.y); ctx.lineTo(x - d * 22, q.y + 5); ctx.stroke();
+      } else if (q.kind === 'wave') {
+        ctx.strokeStyle = 'rgba(80,60,140,.75)'; ctx.lineWidth = 6;
+        const c = d > 0 ? 0 : Math.PI;
+        ctx.beginPath(); ctx.arc(x - d * 14, q.y, 28, c - 1.1, c + 1.1); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x - d * 26, q.y, 26, c - .9, c + .9); ctx.stroke();
+      } else if (q.kind === 'shock') {
+        ctx.fillStyle = '#666';
+        ctx.beginPath(); ctx.moveTo(x - 14, GY); ctx.lineTo(x - 5, GY - 22); ctx.lineTo(x, GY - 10); ctx.lineTo(x + 6, GY - 26); ctx.lineTo(x + 14, GY); ctx.fill();
+      } else if (q.kind === 'log') {
+        ctx.save(); ctx.translate(x, q.y); ctx.rotate(q.rot);
+        ctx.fillStyle = '#c69c6d'; ctx.strokeStyle = '#6b4a2b'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+  function drawSpikes() {
+    (STAGES[game.stage].spikes || []).forEach((sx, i) => {
+      const x = sx - game.camX;
+      if (x < -40 || x > W + 40) return;
+      const st = game.mode === 'title' ? 'down' : spikeState(i);
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+      ctx.strokeRect(x - 26, GY - 1, 52, 6);
+      const h = st === 'up' ? 24 : st === 'warn' ? 5 : 0;
+      if (st === 'warn' && Math.floor(game.time * 10) % 2) { ctx.fillStyle = 'rgba(192,57,43,.25)'; ctx.fillRect(x - 26, GY - 30, 52, 30); }
+      if (!h) return;
+      ctx.fillStyle = st === 'up' ? '#555' : '#c0392b';
+      ctx.beginPath();
+      for (let k = 0; k < 5; k++) { const bx = x - 25 + k * 10; ctx.moveTo(bx, GY); ctx.lineTo(bx + 5, GY - h); ctx.lineTo(bx + 10, GY); }
+      ctx.fill();
+    });
+  }
   function drawItems() {
     for (const it of items) {
       const x = it.x - game.camX, y = it.y + Math.sin(it.t * 5) * 3;
@@ -837,7 +994,7 @@
       ctx.textAlign = 'center'; ctx.fillStyle = '#222'; ctx.font = '800 40px "Hiragino Sans", "Noto Sans JP", sans-serif';
       ctx.fillText(`STAGE ${game.stage + 1}  ${STAGES[game.stage].name}`, W / 2, 140);
       ctx.fillStyle = '#c0392b'; ctx.font = '700 20px "Hiragino Sans", "Noto Sans JP", sans-serif';
-      ctx.fillText(game.stage ? `${WEAPONS[player.weapon].name}を手に入れた。Z で振れる` : 'Z でパンチ、X でキック', W / 2, 176);
+      ctx.fillText(STAGES[game.stage].tip, W / 2, 176);
       ctx.globalAlpha = 1;
     }
   }
@@ -854,10 +1011,12 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (game.shake > 0) ctx.translate(rand(-1, 1) * game.shake, rand(-1, 1) * game.shake);
     drawBG();
+    drawSpikes();
     drawItems();
     const all = enemies.concat([player]).sort((a, b) => (a.state === 'dead') - (b.state === 'dead') || 0);
     for (const F of all.filter((f) => f.state === 'dead')) drawFighter(F);
     for (const F of all.filter((f) => f.state !== 'dead')) drawFighter(F);
+    drawProjs();
     drawParts();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (game.mode === 'title') {
@@ -911,7 +1070,7 @@
   newGame();
   game.mode = 'title';
   // 自動テスト用。?debug を付けたときだけ中身を外から読めるようにする
-  if (location.search.includes('debug')) window.__dbg = { game, get player() { return player; }, get enemies() { return enemies; }, loadStage };
+  if (location.search.includes('debug')) window.__dbg = { game, get player() { return player; }, get enemies() { return enemies; }, get projs() { return projs; }, loadStage };
   requestAnimationFrame(frame);
 })();
 </script>
