@@ -1,0 +1,21 @@
+---
+import { type CollectionEntry, getCollection, render } from 'astro:content';
+import VideoPost from '../../layouts/VideoPost.astro';
+
+// ゲーム本体は public/games/<slug>.html。記事と同じ全幅の枠で表示する
+export async function getStaticPaths() {
+	const games = await getCollection('games', ({ data }) => !data.draft);
+	return games.map((game) => ({
+		params: { slug: game.id },
+		props: game,
+	}));
+}
+type Props = CollectionEntry<'games'>;
+
+const game = Astro.props;
+const { Content } = await render(game);
+---
+
+<VideoPost {...game.data} embed={`games/${game.id}`}>
+	<Content />
+</VideoPost>

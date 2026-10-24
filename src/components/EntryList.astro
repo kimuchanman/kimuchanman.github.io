@@ -1,0 +1,80 @@
+---
+import FormattedDate from './FormattedDate.astro';
+
+// 一覧の 1 行。kinds は題名の前に出すラベル(動画・図・ゲーム)
+export interface Entry {
+	href: string;
+	date: Date;
+	title: string;
+	kinds: string[];
+}
+interface Props {
+	entries: Entry[];
+}
+
+const entries = Astro.props.entries.slice().sort((a, b) => b.date.valueOf() - a.date.valueOf());
+---
+
+<ul>
+	{entries.map((e) => (
+		<li>
+			<a href={e.href}>
+				<p class="date">
+					<FormattedDate date={e.date} />
+				</p>
+				<h4 class="title">{e.kinds.map((k) => <span class="kind">{k}</span>)}{e.title}</h4>
+			</a>
+		</li>
+	))}
+</ul>
+<style>
+	ul {
+		list-style-type: none;
+		margin: 0;
+		padding: 0;
+	}
+	ul li {
+		border-bottom: 1px solid rgb(var(--gray-light));
+	}
+	ul li a {
+		display: flex;
+		align-items: baseline;
+		gap: 1em;
+		padding: 0.9em 0;
+		text-decoration: none;
+	}
+	.date {
+		flex: 0 0 7.5em;
+		margin: 0;
+		color: rgb(var(--gray));
+		font-size: 0.9em;
+		white-space: nowrap;
+	}
+	.title {
+		margin: 0;
+		font-size: 1.05em;
+		font-weight: 600;
+		color: rgb(var(--black));
+		line-height: 1.4;
+	}
+	.kind {
+		display: inline-block;
+		font-size: 0.7em;
+		vertical-align: middle;
+		margin-right: 0.6em;
+		padding: 0.1em 0.5em;
+		border: 1px solid rgb(var(--gray));
+		border-radius: 999px;
+		color: rgb(var(--gray));
+	}
+	ul li a:hover .title,
+	ul li a:hover .date {
+		color: rgb(var(--accent));
+	}
+	@media (max-width: 720px) {
+		ul li a {
+			flex-direction: column;
+			gap: 0.2em;
+		}
+	}
+</style>

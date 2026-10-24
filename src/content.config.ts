@@ -24,4 +24,15 @@ const blog = defineCollection({
 		}),
 });
 
-export const collections = { blog };
+// ゲーム: 本体は public/games/<id>.html。ここには一覧とページに出す題名と日付だけを書く
+const games = defineCollection({
+	loader: glob({ base: './src/content/games', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string(),
+		pubDate: z.coerce.date(),
+		draft: z.boolean().default(false),
+	}),
+});
+
+export const collections = { blog, games };

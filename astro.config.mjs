@@ -8,7 +8,6 @@ import { defineConfig, fontProviders } from 'astro/config';
 export default defineConfig({
 	site: 'https://kimuchanman.github.io',
 	redirects: {
-		'/blog': '/',
 		// 動画記事は文章記事に統合した(2026-10-18)。古い URL は文章記事へ送る
 		'/blog/video-fluency-vs-diff': '/blog/fluency-vs-diff/',
 		'/blog/video-forgetting-mechanisms': '/blog/forgetting-is-six-events/',
@@ -18,6 +17,8 @@ export default defineConfig({
 		'/blog/aws-messaging-ontology-map': '/blog/ontology-map-evaluation/',
 		'/blog/aws-ontology-map': '/blog/ontology-map-evaluation/',
 		'/blog/git-ontology-map': '/blog/ontology-map-evaluation/',
+		// ゲームは記事から外し、/games/ に置いた(2026-10-24)
+		'/blog/game-stick-brawl': '/games/stick-brawl/',
 	},
 	integrations: [mdx(), sitemap()],
 	fonts: [

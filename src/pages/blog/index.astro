@@ -1,0 +1,26 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import EntryList from '../../components/EntryList.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { postEntries } from '../../entries';
+
+const entries = await postEntries();
+---
+
+<!doctype html>
+<html lang="ja">
+	<head>
+		<BaseHead title={`Blog | ${SITE_TITLE}`} description="kimuchan の記事の一覧" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section>
+				<EntryList entries={entries} />
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
