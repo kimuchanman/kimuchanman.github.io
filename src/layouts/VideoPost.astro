@@ -84,7 +84,7 @@ const src = video ? `/videos/${video}.html` : `/${embed}.html`;
 					})();
 				</script>
 				<p class="open">
-					<a href={src} target="_blank" rel="noopener">{video ? '動画' : embed?.startsWith('games/') ? 'ゲーム' : '図'}だけを別タブで開く</a>
+					<a href={src} target="_blank" rel="noopener">{video ? '動画' : '図'}だけを別タブで開く</a>
 				</p>
 				<div class="prose">
 					<slot />

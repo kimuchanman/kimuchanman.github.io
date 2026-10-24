@@ -17,8 +17,9 @@ export default defineConfig({
 		'/blog/aws-messaging-ontology-map': '/blog/ontology-map-evaluation/',
 		'/blog/aws-ontology-map': '/blog/ontology-map-evaluation/',
 		'/blog/git-ontology-map': '/blog/ontology-map-evaluation/',
-		// ゲームは記事から外し、/games/ に置いた(2026-10-24)
-		'/blog/game-stick-brawl': '/games/stick-brawl/',
+		// ゲームは記事から外し、本体の HTML へ直接案内する(2026-10-24)
+		'/blog/game-stick-brawl': '/games/stick-brawl.html',
+		'/games/stick-brawl': '/games/stick-brawl.html',
 	},
 	integrations: [mdx(), sitemap()],
 	fonts: [

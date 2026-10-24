@@ -12,10 +12,11 @@ export async function postEntries(): Promise<Entry[]> {
 	});
 }
 
+// ゲームの一覧行。サイトのページを挟まず、public/games/<id>.html へ直接案内する
 export async function gameEntries(label: boolean): Promise<Entry[]> {
 	const games = await getCollection('games', ({ data }) => !data.draft);
 	return games.map((game) => ({
-		href: `/games/${game.id}/`,
+		href: `/games/${game.id}.html`,
 		date: game.data.pubDate,
 		title: game.data.title,
 		kinds: label ? ['ゲーム'] : [],

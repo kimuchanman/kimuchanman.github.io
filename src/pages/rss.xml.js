@@ -11,7 +11,7 @@ export async function GET(context) {
 		site: context.site,
 		items: [
 			...posts.map((post) => ({ ...post.data, link: `/blog/${post.id}/` })),
-			...games.map((game) => ({ ...game.data, link: `/games/${game.id}/` })),
+			...games.map((game) => ({ ...game.data, link: `/games/${game.id}.html` })),
 		],
 	});
 }

@@ -15,7 +15,7 @@ Astro で作った静的サイト。main に push すると GitHub Actions が b
 - 文章記事の無い動画だけは 1 本を 1 記事にする。`src/content/blog/video-<slug>.md` の frontmatter に `video: '<slug>'` と `duration: '9:26'` を書くと、全幅のプレイヤー(VideoPost レイアウト)で表示される。本文には導入・出典・VOICEVOX のクレジットを書く(場面一覧は動画のサイドバーに出るので書かない)
 - 一覧の「動画」ラベルは、`video` を持つ記事と、本文に動画を埋め込んだ記事に付く
 - 地図などの対話的な図は `public/maps/<slug>.html` に置き、frontmatter に `embed: 'maps/<slug>'` を書くと同じ全幅の枠で表示され、一覧に「図」ラベルが付く。1 記事に図を複数載せるときは `embed` を使わず、本文に `<figure class="map-embed">` で埋め込む(一覧の「図」ラベルも付く)
-- ブラウザで遊ぶゲームは記事にしない。本体を `public/games/<slug>.html` に置き、`src/content/games/<slug>.md` に `title` `description` `pubDate` だけを書く。`/games/<slug>/` に図と同じ全幅の枠で表示され、Home の一覧に「ゲーム」ラベル付きで出る。URL に `?debug` を付けると `window.__dbg` から状態を読める(自動テスト用)
+- ブラウザで遊ぶゲームは記事にしない。本体を `public/games/<slug>.html` に置き、`src/content/games/<slug>.md` に `title` `description` `pubDate` だけを書く。一覧からは `/games/<slug>.html` へ直接飛ぶ(サイトのページを挟まない)。Home の一覧には「ゲーム」ラベル付きで出る。URL に `?debug` を付けると `window.__dbg` から状態を読める(自動テスト用)
 - 単体の HTML(artifact など)は `public/` に置くと、そのパスでそのまま配信される。100 MB 超のファイルは GitHub が受け付けない
 
 ```sh
