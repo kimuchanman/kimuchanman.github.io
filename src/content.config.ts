@@ -35,4 +35,15 @@ const games = defineCollection({
 	}),
 });
 
-export const collections = { blog, games };
+// ツール: 本体は public/tools/<id>.html。ゲームと同じく、一覧に出す題名と日付だけを書く
+const tools = defineCollection({
+	loader: glob({ base: './src/content/tools', pattern: '**/*.md' }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string(),
+		pubDate: z.coerce.date(),
+		draft: z.boolean().default(false),
+	}),
+});
+
+export const collections = { blog, games, tools };

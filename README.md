@@ -4,7 +4,7 @@ Astro で作った静的サイト。main に push すると GitHub Actions が b
 
 - サイト: https://kimuchanman.github.io
 - 設計と書き方の方針: docs/DESIGN.md(全体図を先に、数値は表、関係は Mermaid、文は kimukei-writing で整えて著者の文として扱う)
-- ヘッダーは Home・Blog・Game。Home(`/`)は記事とゲームを日付順に混ぜた新着一覧、Blog(`/blog/`)は記事だけ、Game(`/games/`)はゲームだけの一覧
+- ヘッダーは Home・Blog・Game・Tool。Home(`/`)は記事・ゲーム・ツールを日付順に混ぜた新着一覧、Blog(`/blog/`)は記事だけ、Game(`/games/`)はゲームだけ、Tool(`/tools/`)はツールだけの一覧
 - 記事を載せる手順は個人 skill `blog-publish`(`~/.claude/skills/blog-publish/SKILL.md`)にある
 - 記事: `src/content/blog/*.md`。frontmatter は `title` `description` `pubDate`(任意で `updatedDate` `heroImage` `draft`)
 - 図は ```` ```mermaid ```` の fence で書く。ブラウザ側で描画する(BlogPost レイアウトの script)
@@ -16,6 +16,7 @@ Astro で作った静的サイト。main に push すると GitHub Actions が b
 - 一覧の「動画」ラベルは、`video` を持つ記事と、本文に動画を埋め込んだ記事に付く
 - 地図などの対話的な図は `public/maps/<slug>.html` に置き、frontmatter に `embed: 'maps/<slug>'` を書くと同じ全幅の枠で表示され、一覧に「図」ラベルが付く。1 記事に図を複数載せるときは `embed` を使わず、本文に `<figure class="map-embed">` で埋め込む(一覧の「図」ラベルも付く)
 - ブラウザで遊ぶゲームは記事にしない。本体を `public/games/<slug>.html` に置き、`src/content/games/<slug>.md` に `title` `description` `pubDate` だけを書く。一覧からは `/games/<slug>.html` へ直接飛ぶ(サイトのページを挟まない)。Home の一覧には「ゲーム」ラベル付きで出る。URL に `?debug` を付けると `window.__dbg` から状態を読める(自動テスト用)
+- ブラウザで使うツールもゲームと同じ扱い。本体を `public/tools/<slug>.html` に置き、`src/content/tools/<slug>.md` に `title` `description` `pubDate` だけを書く。Home の一覧には「ツール」ラベル付きで出る
 - 単体の HTML(artifact など)は `public/` に置くと、そのパスでそのまま配信される。100 MB 超のファイルは GitHub が受け付けない
 
 ```sh

@@ -4,10 +4,10 @@ import EntryList from '../components/EntryList.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { gameEntries, postEntries } from '../entries';
+import { gameEntries, postEntries, toolEntries } from '../entries';
 
-// トップは記事とゲームを日付順に混ぜた新着一覧
-const entries = [...(await postEntries()), ...(await gameEntries(true))];
+// トップは記事・ゲーム・ツールを日付順に混ぜた新着一覧
+const entries = [...(await postEntries()), ...(await gameEntries(true)), ...(await toolEntries(true))];
 ---
 
 <!doctype html>

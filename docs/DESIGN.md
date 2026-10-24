@@ -19,7 +19,7 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 | --- | --- | --- |
 | 置き場 | GitHub Pages + Astro、公開リポジトリ | 無料で、Markdown に生の HTML と script が通る。Node と pnpm が手元にある |
 | 公開範囲 | すべて公開 | GitHub Free では非公開配信ができない。自分だけに見せる文章は書かない(下書きは非公開リポジトリに置く) |
-| ページ構成 | ヘッダーに Home・Blog・Game。Home = 記事とゲームの新着一覧、`/blog/` = 記事一覧、`/games/` = ゲーム一覧、`/blog/<slug>/` = 記事、`/games/<slug>.html` = ゲーム本体 | ゲームは読み物ではないので記事と分け、一覧から本体の HTML へ直接案内する。新着を 1 か所で見られるように Home は両方を混ぜる(2026-10-24 にゲームを足したときに変えた。それまではトップ = 記事一覧で、`/blog` はトップへ転送していた) |
+| ページ構成 | ヘッダーに Home・Blog・Game・Tool。Home = 記事・ゲーム・ツールの新着一覧、`/blog/` = 記事一覧、`/games/` = ゲーム一覧、`/tools/` = ツール一覧、`/blog/<slug>/` = 記事、`/games/<slug>.html` = ゲーム本体、`/tools/<slug>.html` = ツール本体 | ゲームとツールは読み物ではないので記事と分け、一覧から本体の HTML へ直接案内する。新着を 1 か所で見られるように Home は全部を混ぜる(2026-10-24 にゲームを足したときに変え、同日にツールを足した。それまではトップ = 記事一覧で、`/blog` はトップへ転送していた) |
 | 一覧 | 1 記事 1 行(日付 + 題名)、動画には「動画」ラベル | 題名を横に並べると比較する意味がないのに視線が往復する |
 | 文章記事 | `.md`、BlogPost レイアウト | `.mdx` は script を Astro が処理するので、生で出したいときに `is:inline` が要る |
 | 動画と文章 | 同じ内容の文章記事があれば、動画は文章記事の本文に埋め込む(本文より広い幅、プレイヤーだけ)。文章記事の無い動画だけ、`video` と `duration` を持つ動画記事にする | 同じ内容で記事が 2 本あると一覧が増え、読み手がどちらを読むか迷う。台本と出典は「動画だけを別タブで開く」の単体ページで読める(2026-10-18 に動画記事 3 本を統合した) |
@@ -62,5 +62,6 @@ kimuchan の記事と解説動画を置く公開サイト。しずかなイン�
 - 動画を足す: `public/videos/<slug>.html`(favicon の link を足す)を置き、同じ内容の文章記事があればその本文に埋め込む。無ければ `src/content/blog/video-<slug>.md` を置く
 - 図を足す: `public/maps/<slug>.html`(doctype・charset・favicon の link 付き)と、`embed` を書いた記事を置く
 - ゲームを足す: `public/games/<slug>.html`(doctype・charset・favicon の link 付き)と、題名と日付だけを書いた `src/content/games/<slug>.md` を置く。記事は書かない
+- ツールを足す: ゲームと同じ手順で、置き場が `public/tools/<slug>.html` と `src/content/tools/<slug>.md` になる
 - 確認する: `pnpm build` が通ること、Mermaid を使った記事はブラウザで図が出ること
 - 費用: GitHub Pages と Actions は公開リポジトリでは無料。上限はサイト 1 GB、転送 月 100 GB

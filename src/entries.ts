@@ -22,3 +22,14 @@ export async function gameEntries(label: boolean): Promise<Entry[]> {
 		kinds: label ? ['ゲーム'] : [],
 	}));
 }
+
+// ツールの一覧行。ゲームと同じく public/tools/<id>.html へ直接案内する
+export async function toolEntries(label: boolean): Promise<Entry[]> {
+	const tools = await getCollection('tools', ({ data }) => !data.draft);
+	return tools.map((tool) => ({
+		href: `/tools/${tool.id}.html`,
+		date: tool.data.pubDate,
+		title: tool.data.title,
+		kinds: label ? ['ツール'] : [],
+	}));
+}

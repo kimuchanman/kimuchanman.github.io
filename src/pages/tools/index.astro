@@ -1,0 +1,26 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import EntryList from '../../components/EntryList.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { toolEntries } from '../../entries';
+
+const entries = await toolEntries(false);
+---
+
+<!doctype html>
+<html lang="ja">
+	<head>
+		<BaseHead title={`Tool | ${SITE_TITLE}`} description="kimuchan が作ったブラウザで使うツールの一覧" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section>
+				<EntryList entries={entries} />
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
