@@ -94,7 +94,7 @@
   </div>
   <p class="help">
     <kbd>←</kbd><kbd>→</kbd> 移動 ・ <kbd>↑</kbd> か <kbd>Space</kbd> ジャンプ ・
-    <kbd>Z</kbd> パンチ(3 回でコンボ) ・ <kbd>X</kbd> キック(空中でも出せる) ・ <kbd>P</kbd> 一時停止
+    <kbd>Z</kbd> 攻撃(3 回でコンボ。ステージ 2 は棒、3 は剣) ・ <kbd>X</kbd> キック(空中でも出せる) ・ <kbd>P</kbd> 一時停止
   </p>
 </div>
 <script>
@@ -169,26 +169,67 @@
     quick: { dur: .42, a: .22, b: .3,  reach: 46, h: 73, dmg: 6,  kx: 180, ky: 0,    stun: .25, lunge: 120, kind: 'punch', arm: 'a' },
     heavy: { dur: .9,  a: .55, b: .66, reach: 62, h: 70, dmg: 15, kx: 480, ky: -280, stun: .55, lunge: 60,  kind: 'heavy', freeze: .1 },
     dash:  { dur: .9,  a: .4,  b: .7,  reach: 48, h: 70, dmg: 12, kx: 420, ky: -200, stun: .5,  lunge: 0,   kind: 'dash', dashV: 560 },
+    // 棒(ステージ 2)。3 発目の振り下ろしは盾を崩す
+    s1:    { dur: .32, a: .08, b: .17, reach: 84,  h: 70, dmg: 12, kx: 220, ky: 0,    stun: .32, lunge: 80,  kind: 'swing', next: 's2' },
+    s2:    { dur: .32, a: .08, b: .17, reach: 84,  h: 62, dmg: 12, kx: 240, ky: -120, stun: .35, lunge: 80,  kind: 'rise', next: 's3' },
+    s3:    { dur: .55, a: .18, b: .28, reach: 92,  h: 50, dmg: 22, kx: 300, ky: -520, stun: .7,  lunge: 100, kind: 'slam', freeze: .12, brk: true },
+    // 剣(ステージ 3)。3 発目は前にいる敵をまとめて斬る
+    w1:    { dur: .28, a: .06, b: .14, reach: 80,  h: 70, dmg: 16, kx: 200, ky: 0,    stun: .3,  lunge: 90,  kind: 'swing', next: 'w2' },
+    w2:    { dur: .28, a: .06, b: .14, reach: 80,  h: 66, dmg: 16, kx: 220, ky: 0,    stun: .32, lunge: 90,  kind: 'rise', next: 'w3' },
+    w3:    { dur: .5,  a: .14, b: .26, reach: 125, h: 65, dmg: 30, kx: 520, ky: -300, stun: .6,  lunge: 180, kind: 'swing', freeze: .12, brk: true },
+    // 武器を持つ敵
+    e_staff: { dur: .75, a: .45, b: .55, reach: 78,  h: 65, dmg: 10, kx: 280, ky: -100, stun: .35, lunge: 60,  kind: 'swing' },
+    e_slash: { dur: .55, a: .3,  b: .38, reach: 70,  h: 70, dmg: 10, kx: 240, ky: -60,  stun: .3,  lunge: 120, kind: 'swing' },
+    b_staff: { dur: .95, a: .55, b: .68, reach: 95,  h: 60, dmg: 16, kx: 500, ky: -300, stun: .55, lunge: 80,  kind: 'slam', freeze: .1 },
+    b_sword: { dur: .8,  a: .45, b: .56, reach: 100, h: 65, dmg: 18, kx: 500, ky: -280, stun: .55, lunge: 140, kind: 'swing', freeze: .1 },
+  };
+  // キック・アッパー・空中キックは盾を崩せる
+  ATK.kick.brk = ATK.p3.brk = ATK.air.brk = true;
+  const WEAPONS = {
+    fist:  { name: '素手', first: 'p1' },
+    staff: { name: '棒',   first: 's1' },
+    sword: { name: '剣',   first: 'w1' },
   };
   const ETYPES = {
-    grunt: { hp: 30,  speed: 115, scale: 1,    color: '#b3261e', atk: 'jab',   score: 100,  cd: [.9, 1.7] },
-    fast:  { hp: 20,  speed: 190, scale: .9,   color: '#d9730d', atk: 'quick', score: 150,  cd: [.6, 1.2] },
-    big:   { hp: 80,  speed: 75,  scale: 1.25, color: '#5b3fa0', atk: 'heavy', score: 300,  cd: [1.2, 2], heavy: true },
-    boss:  { hp: 200, speed: 105, scale: 1.6,  color: '#3b3b3b', atk: 'heavy', score: 1000, cd: [.8, 1.5], heavy: true, boss: true },
+    grunt:  { hp: 30,  speed: 115, scale: 1,    color: '#b3261e', atk: 'jab',     score: 100,  cd: [.9, 1.7] },
+    fast:   { hp: 20,  speed: 190, scale: .9,   color: '#d9730d', atk: 'quick',   score: 150,  cd: [.6, 1.2] },
+    big:    { hp: 80,  speed: 75,  scale: 1.25, color: '#5b3fa0', atk: 'heavy',   score: 300,  cd: [1.2, 2], heavy: true },
+    staffer:{ hp: 40,  speed: 110, scale: 1,    color: '#2b7a3d', atk: 'e_staff', score: 150,  cd: [1, 1.8], weapon: 'staff' },
+    shield: { hp: 45,  speed: 90,  scale: 1,    color: '#1f5f8b', atk: 'jab',     score: 200,  cd: [1, 1.8], shield: true },
+    blade:  { hp: 35,  speed: 150, scale: 1,    color: '#8b1f5f', atk: 'e_slash', score: 200,  cd: [.8, 1.4], weapon: 'sword' },
+    boss:   { hp: 200, speed: 105, scale: 1.6,  color: '#3b3b3b', atk: 'heavy',   score: 1000, cd: [.8, 1.5], heavy: true, boss: true },
+    boss2:  { hp: 260, speed: 105, scale: 1.6,  color: '#2d4a2d', atk: 'b_staff', score: 1500, cd: [.8, 1.5], heavy: true, boss: true, weapon: 'staff' },
+    boss3:  { hp: 320, speed: 115, scale: 1.6,  color: '#3a2a4a', atk: 'b_sword', score: 2000, cd: [.7, 1.3], heavy: true, boss: true, weapon: 'sword' },
   };
-  // カメラの左端が x に来たら画面を止め、list の敵を左右から出す
-  const AREAS = [
-    { x: 800,  list: ['grunt', 'grunt', 'grunt'] },
-    { x: 1900, list: ['grunt', 'fast', 'grunt', 'fast'] },
-    { x: 3000, list: ['big', 'grunt', 'fast', 'grunt'] },
-    { x: 3900, list: ['boss', 'grunt', 'grunt'] },
+  // areas: カメラの左端が x に来たら画面を止め、list の敵を左右から出す
+  const STAGES = [
+    { name: '街', theme: 'city', weapon: 'fist', areas: [
+      { x: 800,  list: ['grunt', 'grunt', 'grunt'] },
+      { x: 1900, list: ['grunt', 'fast', 'grunt', 'fast'] },
+      { x: 3000, list: ['big', 'grunt', 'fast', 'grunt'] },
+      { x: 3900, list: ['boss', 'grunt', 'grunt'] },
+    ] },
+    { name: '森', theme: 'forest', weapon: 'staff', areas: [
+      { x: 800,  list: ['grunt', 'staffer', 'grunt', 'fast'] },
+      { x: 1900, list: ['staffer', 'fast', 'staffer', 'fast'] },
+      { x: 3000, list: ['big', 'staffer', 'fast', 'staffer', 'grunt'] },
+      { x: 3900, list: ['boss2', 'staffer', 'grunt'] },
+    ] },
+    { name: '城', theme: 'castle', weapon: 'sword', areas: [
+      { x: 800,  list: ['shield', 'grunt', 'staffer', 'grunt'] },
+      { x: 1900, list: ['shield', 'blade', 'shield', 'fast'] },
+      { x: 3000, list: ['big', 'shield', 'blade', 'staffer', 'blade'] },
+      { x: 3900, list: ['boss3', 'shield', 'blade'] },
+    ] },
   ];
+  const areas = () => STAGES[game.stage].areas;
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const hash = (i) => { const s = Math.sin(i * 127.1) * 43758.5453; return s - Math.floor(s); };
 
   // ---- 状態 ----
-  const game = { mode: 'title', paused: false, time: 0, playT: 0, score: 0, kills: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0, clearT: 0 };
+  const game = { mode: 'title', paused: false, time: 0, playT: 0, score: 0, kills: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0, clearT: 0,
+    stage: 0, stageScore: 0, stageKills: 0, totalT: 0, banner: 0 };
   let player, enemies, parts, items, spawnQ, uid = 0;
 
   function fighter(o) {
@@ -199,13 +240,24 @@
   }
   function makeEnemy(type, x) {
     const T = ETYPES[type];
-    return fighter({ x, hp: T.hp, max: T.hp, T, type, color: T.color, scale: T.scale, f: -1, cd: rand(.4, 1), deadT: 0, alt: 0 });
+    return fighter({ x, hp: T.hp, max: T.hp, T, type, color: T.color, scale: T.scale, f: -1, cd: rand(.4, 1), deadT: 0, alt: 0, weapon: T.weapon, shield: T.shield });
   }
-  function startGame() {
+  function newGame() {
+    game.score = 0; game.kills = 0; game.totalT = 0;
+    loadStage(0);
+  }
+  // ステージを始める。HP は毎ステージ満タンに戻す
+  function loadStage(i) {
     uid = 0;
+    game.stage = i; game.stageScore = game.score; game.stageKills = game.kills;
     player = makePlayer();
+    player.weapon = STAGES[i].weapon;
     enemies = []; parts = []; items = []; spawnQ = [];
-    Object.assign(game, { mode: 'play', paused: false, playT: 0, score: 0, kills: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0 });
+    Object.assign(game, { mode: 'play', paused: false, playT: 0, camX: 0, lock: null, areaIdx: 0, freeze: 0, shake: 0, goT: 0, combo: 0, comboT: 0, endT: 0, banner: 2.5 });
+  }
+  function retryStage() {
+    game.score = game.stageScore; game.kills = game.stageKills;
+    loadStage(game.stage);
   }
   function setState(F, s) { F.state = s; F.t = 0; }
   function startAttack(F, name) {
@@ -248,6 +300,14 @@
     }
   }
   function hit(F, T, A, px, py) {
+    // 盾持ちは、正面からの崩せない攻撃を防ぐ
+    if (T.shield && T.state !== 'hurt' && T.state !== 'attack' && !A.brk && (F.x - T.x) * T.f > 0) {
+      F.vx = -F.f * 160; T.vx = F.f * 80;
+      game.freeze = Math.max(game.freeze, .04);
+      spark(px, py, F.f, '#7d8a96');
+      parts.push({ kind: 'text', x: T.x, y: T.y - 110, vx: 0, vy: -50, life: .6, max: .6, text: 'ガード', color: '#1f5f8b' });
+      return;
+    }
     T.hp -= A.dmg;
     const k = T.T && T.T.boss ? 0.35 : T.T && T.T.heavy ? 0.6 : 1;
     T.vx = F.f * A.kx * k;
@@ -263,7 +323,7 @@
       T.vy = -380; T.vx = F.f * 420 * k; T.air = true;
       if (!T.player) {
         game.score += T.T.score; game.kills++;
-        if (T.type === 'big' || T.type === 'boss') items.push({ x: T.x, y: T.y - 60, vy: -300, t: 0 });
+        if (T.type === 'big' || T.T.boss) items.push({ x: T.x, y: T.y - 60, vy: -300, t: 0 });
       }
       return;
     }
@@ -301,7 +361,7 @@
     if (P.buf) {
       if (P.air) {
         if (!P.airUsed) { P.airUsed = true; P.buf = null; startAttack(P, 'air'); }
-      } else { startAttack(P, P.buf === 'punch' ? 'p1' : 'kick'); P.buf = null; }
+      } else { startAttack(P, P.buf === 'punch' ? WEAPONS[P.weapon].first : 'kick'); P.buf = null; }
     }
     if (P.state !== 'attack') {
       P.vx = dir * 270;
@@ -381,17 +441,19 @@
     if (game.shake > 0) game.shake = Math.max(0, game.shake - 40 * dt);
     if (game.comboT > 0 && (game.comboT -= dt) <= 0) game.combo = 0;
     if (game.goT > 0) game.goT -= dt;
+    if (game.banner > 0) game.banner -= dt;
 
     updPlayer(player, dt);
 
     // カメラは右にしか進まない。エリアに入ったら止める
     const maxCam = game.lock ? game.lock.x : LEVEL_END - W;
     game.camX = Math.max(game.camX, Math.min(player.x - W * 0.38, maxCam));
-    if (!game.lock && game.areaIdx < AREAS.length && game.camX >= AREAS[game.areaIdx].x) {
-      game.lock = AREAS[game.areaIdx];
+    const A = areas();
+    if (!game.lock && game.areaIdx < A.length && game.camX >= A[game.areaIdx].x) {
+      game.lock = A[game.areaIdx];
       game.camX = game.lock.x;
       game.lock.list.forEach((type, i) => spawnQ.push({ type, delay: 0.4 + i * 0.8, side: i % 2 ? -1 : 1 }));
-      if (game.lock.list.includes('boss')) spawnQ[0].side = 1;
+      if (game.lock.list[0].startsWith('boss')) spawnQ[0].side = 1;
     }
     player.x = Math.max(game.camX + 20, Math.min(game.camX + W - 20, player.x));
 
@@ -414,7 +476,7 @@
 
     if (game.lock && !spawnQ.length && !enemies.some((e) => e.state !== 'dead')) {
       game.lock = null; game.areaIdx++;
-      if (game.areaIdx < AREAS.length) game.goT = 3;
+      if (game.areaIdx < A.length) game.goT = 3;
     }
 
     for (const it of items) {
@@ -430,7 +492,10 @@
     updParts(dt);
 
     if (player.state === 'dead' && (game.endT += dt) > 1.4) game.mode = 'over';
-    if (game.areaIdx >= AREAS.length && player.x >= GOAL_X) { game.mode = 'clear'; game.clearT = game.playT; }
+    if (game.areaIdx >= A.length && player.x >= GOAL_X) {
+      game.clearT = game.playT; game.totalT += game.playT;
+      game.mode = game.stage + 1 < STAGES.length ? 'stageclear' : 'clear';
+    }
   }
 
   // ---- ポーズ(関節の角度) ----
@@ -515,6 +580,17 @@
         p.lean = t < A.a ? -.15 : .35;
         break;
       }
+      // 武器の振り。u は当たり判定が出ている間の進み具合
+      case 'swing': case 'rise': case 'slam': {
+        const u = t < A.a ? 0 : Math.min(1, (t - A.a) / (A.b - A.a));
+        const [from, to] = A.kind === 'swing' ? [2.9, .9] : A.kind === 'rise' ? [.1, 2.5] : [3.1, 1.1];
+        const sh = t < A.a ? .6 + (from - .6) * wind : from + (to - from) * u;
+        p.armA = [sh, .25]; p.armB = [.4, 2.1];
+        p.lean = A.kind === 'slam' ? (t < A.a ? -.25 * wind : .3 * e) : A.kind === 'rise' ? -.1 * e : (t < A.a ? -.1 * wind : .2 * e);
+        if (A.kind === 'slam') { p.legA = [.6, -.4]; p.legB = [-.5, -.1]; }
+        if (t >= A.a && t <= A.b + .05) p.trail = [from, sh];
+        break;
+      }
     }
   }
 
@@ -523,6 +599,25 @@
     const x1 = x0 + Math.sin(a1) * l1, y1 = y0 + Math.cos(a1) * l1;
     const x2 = x1 + Math.sin(a1 + a2) * l2, y2 = y1 + Math.cos(a1 + a2) * l2;
     ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2);
+    return [x2, y2, a1 + a2];
+  }
+  const WLEN = { staff: 50, sword: 44 };
+  // 武器は手の位置から前腕の向きに伸ばす。座標は棒人間のローカル座標
+  function drawWeapon(kind, hx, hy, ang) {
+    const dx = Math.sin(ang), dy = Math.cos(ang);
+    const at = (d) => [hx + dx * d, hy + dy * d];
+    ctx.lineCap = 'round';
+    if (kind === 'staff') {
+      ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(...at(-22)); ctx.lineTo(...at(WLEN.staff)); ctx.stroke();
+    } else if (kind === 'sword') {
+      ctx.strokeStyle = '#8a96a3'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(...at(5)); ctx.lineTo(...at(WLEN.sword)); ctx.stroke();
+      ctx.strokeStyle = '#333';
+      ctx.beginPath(); ctx.moveTo(...at(-6)); ctx.lineTo(...at(5)); ctx.stroke();
+      const [gx, gy] = at(5);
+      ctx.beginPath(); ctx.moveTo(gx + dy * 8, gy - dx * 8); ctx.lineTo(gx - dy * 8, gy + dx * 8); ctx.stroke();
+    }
   }
   function drawFighter(F) {
     const p = pose(F), cam = game.camX;
@@ -547,8 +642,25 @@
     limb(p.chest, shY, p.armB[0], p.armB[1], 16, 16);
     ctx.moveTo(0, hipY); ctx.lineTo(p.chest, shY);
     limb(0, hipY, p.legA[0], p.legA[1], 21, 21);
-    limb(p.chest, shY, p.armA[0], p.armA[1], 16, 16);
+    const hand = limb(p.chest, shY, p.armA[0], p.armA[1], 16, 16);
     ctx.stroke();
+    // 振った軌跡
+    if (p.trail && F.weapon) {
+      const r = 32 + WLEN[F.weapon];
+      ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 12;
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i++) {
+        const a = p.trail[0] + (p.trail[1] - p.trail[0]) * i / 10;
+        ctx[i ? 'lineTo' : 'moveTo'](p.chest + Math.sin(a) * r, shY + Math.cos(a) * r);
+      }
+      ctx.stroke();
+    }
+    if (F.weapon) drawWeapon(F.weapon, ...hand);
+    if (F.shield) {
+      ctx.fillStyle = '#d5dde6'; ctx.strokeStyle = F.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(p.chest + 10, shY + 2, 9, 38, 3); ctx.fill(); ctx.stroke();
+    }
+    ctx.strokeStyle = F.color;
     // 主人公の鉢巻き
     if (F.player) {
       const w = Math.sin(game.time * 14) * 3;
@@ -579,20 +691,56 @@
   function drawBG() {
     const cam = game.camX;
     ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
-    // 遠くのビル(視差 0.2)
-    ctx.strokeStyle = '#e2ded2'; ctx.lineWidth = 2;
-    const far = cam * .2;
-    for (let i = Math.floor(far / 70) - 1; i < (far + W) / 70 + 1; i++) {
-      const h = 50 + hash(i) * 120, x = i * 70 - far;
-      ctx.strokeRect(x, GY - h, 58, h);
-      for (let wy = GY - h + 14; wy < GY - 20; wy += 22) for (let wx = x + 10; wx < x + 50; wx += 16) ctx.strokeRect(wx, wy, 6, 8);
-    }
-    // 電柱(視差 0.6)
-    ctx.strokeStyle = '#c9c4b6'; ctx.lineWidth = 3;
-    const mid = cam * .6;
-    for (let i = Math.floor(mid / 340) - 1; i < (mid + W) / 340 + 1; i++) {
-      const x = i * 340 - mid + 120;
-      ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, GY - 210); ctx.moveTo(x - 22, GY - 190); ctx.lineTo(x + 22, GY - 190); ctx.stroke();
+    const theme = STAGES[game.stage].theme;
+    const far = cam * .2, mid = cam * .6;
+    if (theme === 'city') {
+      // 遠くのビル(視差 0.2)と電柱(視差 0.6)
+      ctx.strokeStyle = '#e2ded2'; ctx.lineWidth = 2;
+      for (let i = Math.floor(far / 70) - 1; i < (far + W) / 70 + 1; i++) {
+        const h = 50 + hash(i) * 120, x = i * 70 - far;
+        ctx.strokeRect(x, GY - h, 58, h);
+        for (let wy = GY - h + 14; wy < GY - 20; wy += 22) for (let wx = x + 10; wx < x + 50; wx += 16) ctx.strokeRect(wx, wy, 6, 8);
+      }
+      ctx.strokeStyle = '#c9c4b6'; ctx.lineWidth = 3;
+      for (let i = Math.floor(mid / 340) - 1; i < (mid + W) / 340 + 1; i++) {
+        const x = i * 340 - mid + 120;
+        ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, GY - 210); ctx.moveTo(x - 22, GY - 190); ctx.lineTo(x + 22, GY - 190); ctx.stroke();
+      }
+    } else if (theme === 'forest') {
+      // 遠くの山と手前の木
+      ctx.strokeStyle = '#d6dfcb'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 8) {
+        const wx = x + far;
+        const y = GY - 90 - Math.sin(wx / 140) * 35 - Math.sin(wx / 53 + 1) * 12;
+        ctx[x ? 'lineTo' : 'moveTo'](x, y);
+      }
+      ctx.stroke();
+      for (let i = Math.floor(mid / 180) - 1; i < (mid + W) / 180 + 1; i++) {
+        const x = i * 180 - mid + 60 + hash(i) * 60, h = 120 + hash(i + 7) * 90;
+        ctx.strokeStyle = '#c8bfa9'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, GY - h); ctx.stroke();
+        ctx.strokeStyle = '#bccbab'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, GY - h - 20, 34 + hash(i + 3) * 14, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x - 22, GY - h + 8, 22, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else {
+      // 城壁と塔、手前の旗
+      ctx.strokeStyle = '#ddd6cc'; ctx.lineWidth = 2;
+      for (let i = Math.floor(far / 60) - 1; i < (far + W) / 60 + 1; i++) {
+        const x = i * 60 - far, tower = i % 6 === 0, h = tower ? 190 : 120;
+        ctx.strokeRect(x, GY - h, 60, h);
+        ctx.strokeRect(x + 8, GY - h - 14, 16, 14); ctx.strokeRect(x + 36, GY - h - 14, 16, 14);
+        if (tower) { ctx.strokeRect(x + 24, GY - h + 30, 12, 20); }
+        for (let by = GY - h + 20; by < GY; by += 24) { ctx.beginPath(); ctx.moveTo(x, by); ctx.lineTo(x + 60, by); ctx.stroke(); }
+      }
+      for (let i = Math.floor(mid / 300) - 1; i < (mid + W) / 300 + 1; i++) {
+        const x = i * 300 - mid + 100, w = Math.sin(game.time * 4 + i) * 5;
+        ctx.strokeStyle = '#c9c4b6'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x, GY); ctx.lineTo(x, GY - 200); ctx.stroke();
+        ctx.fillStyle = '#ead3cf';
+        ctx.beginPath(); ctx.moveTo(x, GY - 200); ctx.lineTo(x + 44, GY - 188 + w); ctx.lineTo(x, GY - 172); ctx.fill();
+      }
     }
     // 地面
     ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
@@ -647,7 +795,7 @@
         ctx.fillStyle = '#bdb8aa';
         ctx.beginPath(); ctx.arc(x, p.y, 3 + (1 - k) * 4, 0, Math.PI * 2); ctx.fill();
       } else if (p.kind === 'text') {
-        ctx.fillStyle = '#c0392b'; ctx.font = '700 18px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = p.color || '#c0392b'; ctx.font = '700 18px sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(p.text, x, p.y);
       }
     }
@@ -663,7 +811,9 @@
     ctx.textAlign = 'left'; ctx.fillStyle = '#222'; ctx.font = '700 14px sans-serif';
     ctx.fillText('HP', 18, 30);
     bar(46, 18, 220, 14, player.hp / player.max, player.hp > 30 ? '#2f9e44' : '#c0392b');
-    if (game.combo >= 2) { ctx.fillStyle = '#c0392b'; ctx.font = '700 20px sans-serif'; ctx.fillText(`${game.combo} HIT`, 18, 60); }
+    ctx.font = '600 13px sans-serif'; ctx.fillStyle = '#555';
+    ctx.fillText(`STAGE ${game.stage + 1} ${STAGES[game.stage].name} ・ 武器 ${WEAPONS[player.weapon].name}`, 18, 52);
+    if (game.combo >= 2) { ctx.fillStyle = '#c0392b'; ctx.font = '700 20px sans-serif'; ctx.fillText(`${game.combo} HIT`, 18, 80); }
     ctx.textAlign = 'right'; ctx.fillStyle = '#222'; ctx.font = '700 14px sans-serif';
     ctx.fillText(`SCORE ${String(game.score).padStart(6, '0')}   TIME ${fmt(game.playT)}`, W - 18, 30);
     const boss = enemies.find((e) => e.T.boss && e.state !== 'dead');
@@ -675,12 +825,20 @@
       const x0 = W / 2 - 150, x1 = W / 2 + 150;
       ctx.strokeStyle = '#bdb8aa'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x0, 25); ctx.lineTo(x1, 25); ctx.stroke();
-      for (const a of AREAS) { const ax = x0 + (x1 - x0) * (a.x + W * .38) / GOAL_X; ctx.beginPath(); ctx.moveTo(ax, 20); ctx.lineTo(ax, 30); ctx.stroke(); }
+      for (const a of areas()) { const ax = x0 + (x1 - x0) * (a.x + W * .38) / GOAL_X; ctx.beginPath(); ctx.moveTo(ax, 20); ctx.lineTo(ax, 30); ctx.stroke(); }
       ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(x0 + (x1 - x0) * Math.min(1, player.x / GOAL_X), 25, 5, 0, Math.PI * 2); ctx.fill();
     }
     if (game.goT > 0 && Math.floor(game.goT * 3) % 2 === 0) {
       ctx.fillStyle = '#c0392b'; ctx.font = '800 40px sans-serif'; ctx.textAlign = 'right';
       ctx.fillText('GO ▶', W - 30, 170);
+    }
+    if (game.banner > 0) {
+      ctx.globalAlpha = Math.min(1, game.banner);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#222'; ctx.font = '800 40px "Hiragino Sans", "Noto Sans JP", sans-serif';
+      ctx.fillText(`STAGE ${game.stage + 1}  ${STAGES[game.stage].name}`, W / 2, 140);
+      ctx.fillStyle = '#c0392b'; ctx.font = '700 20px "Hiragino Sans", "Noto Sans JP", sans-serif';
+      ctx.fillText(game.stage ? `${WEAPONS[player.weapon].name}を手に入れた。Z で振れる` : 'Z でパンチ、X でキック', W / 2, 176);
+      ctx.globalAlpha = 1;
     }
   }
   function panel(lines) {
@@ -703,24 +861,31 @@
     drawParts();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (game.mode === 'title') {
-      panel([['棒人間アクション', 44], ['敵を倒しながら右へ進み、ゴールの旗を目指す', 18, '#555'], ['クリックか Enter でスタート', 20, '#c0392b']]);
+      panel([['棒人間アクション', 44], ['敵を倒しながら右へ進み、ゴールの旗を目指す。全 3 ステージ', 18, '#555'], ['ステージを進むと武器が 素手 → 棒 → 剣 と強くなる', 18, '#555'], ['クリックか Enter でスタート', 20, '#c0392b']]);
     } else {
       drawHUD();
-      if (game.mode === 'over') panel([['GAME OVER', 44, '#c0392b'], [`スコア ${game.score} ・ 倒した数 ${game.kills}`, 18, '#555'], ['クリックか R でもう一度', 20]]);
-      else if (game.mode === 'clear') panel([['CLEAR!', 48, '#2f9e44'], [`タイム ${fmt(game.clearT)} ・ スコア ${game.score} ・ 倒した数 ${game.kills}`, 18, '#555'], ['クリックか R でもう一度', 20]]);
+      if (game.mode === 'over') panel([['GAME OVER', 44, '#c0392b'], [`STAGE ${game.stage + 1} ・ スコア ${game.score} ・ 倒した数 ${game.kills}`, 18, '#555'], ['クリックか R でこのステージからやり直す', 20]]);
+      else if (game.mode === 'stageclear') {
+        const nx = STAGES[game.stage + 1];
+        panel([[`STAGE ${game.stage + 1} CLEAR`, 44, '#2f9e44'], [`タイム ${fmt(game.clearT)} ・ スコア ${game.score}`, 18, '#555'], [`次のステージ「${nx.name}」では${WEAPONS[nx.weapon].name}を使える`, 22, '#c0392b'], ['クリックか Enter で次へ', 18]]);
+      } else if (game.mode === 'clear') panel([['ALL CLEAR!', 48, '#2f9e44'], [`合計タイム ${fmt(game.totalT)} ・ スコア ${game.score} ・ 倒した数 ${game.kills}`, 18, '#555'], ['クリックか R で最初から', 20]]);
       else if (game.paused) panel([['一時停止中', 36], ['クリックか P で再開', 20, '#555']]);
     }
   }
 
   // ---- ループ ----
   function collect() {
-    if (game.mode === 'title' || game.mode === 'over' || game.mode === 'clear') {
-      if (take('start') || take('retry') || (game.mode === 'title' && take('punch'))) startGame();
+    if (game.mode !== 'play') {
+      const go = take('start') || take('retry') || (game.mode === 'title' && take('punch'));
+      if (!go) return;
+      if (game.mode === 'over') retryStage();
+      else if (game.mode === 'stageclear') loadStage(game.stage + 1);
+      else newGame();
       return;
     }
     if (game.paused) { if (take('start') || take('pause')) game.paused = false; return; }
     if (take('pause')) { game.paused = true; return; }
-    if (take('retry')) { startGame(); return; }
+    if (take('retry')) { retryStage(); return; }
     if (take('punch')) { player.buf = 'punch'; player.bufT = .3; }
     if (take('kick')) { player.buf = 'kick'; player.bufT = .3; }
     if (take('jump')) player.jumpT = .15;
@@ -743,10 +908,10 @@
     hits.clear();
     requestAnimationFrame(frame);
   }
-  startGame();
+  newGame();
   game.mode = 'title';
   // 自動テスト用。?debug を付けたときだけ中身を外から読めるようにする
-  if (location.search.includes('debug')) window.__dbg = { game, get player() { return player; }, get enemies() { return enemies; } };
+  if (location.search.includes('debug')) window.__dbg = { game, get player() { return player; }, get enemies() { return enemies; }, loadStage };
   requestAnimationFrame(frame);
 })();
 </script>
