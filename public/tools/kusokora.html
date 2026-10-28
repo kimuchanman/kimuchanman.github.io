@@ -129,7 +129,7 @@
         <h2>画像</h2>
         <div class="row">
           <label class="filebtn">画像を開く<input type="file" id="file" accept="image/*"></label>
-          <button class="primary" id="save" disabled>PNG で保存</button>
+          <button class="primary" id="copy" disabled>クリップボードにコピー</button>
         </div>
       </section>
 
@@ -481,7 +481,7 @@
       $('undo').disabled = true;
       view.classList.add('on');
       $('empty').style.display = 'none';
-      for (const id of ['save', 'addBalloon', 'addText', 'addRect']) $(id).disabled = false;
+      for (const id of ['copy', 'addBalloon', 'addText', 'addRect']) $(id).disabled = false;
       syncPanel();
       render();
     };
@@ -753,22 +753,24 @@
 
   window.addEventListener('resize', render);
 
-  // ---------- 保存 ----------
+  // ---------- コピー ----------
 
-  $('save').onclick = () => {
+  // ClipboardItem に Promise を渡すと、Safari でもクリック直後の操作として扱われる
+  $('copy').onclick = async () => {
+    const btn = $('copy');
     const out = document.createElement('canvas');
     out.width = view.width;
     out.height = view.height;
     paint(out.getContext('2d'), false);
-    out.toBlob((blob) => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'kusokora.png';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    }, 'image/png');
+    const blob = new Promise((resolve) => out.toBlob(resolve, 'image/png'));
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      btn.textContent = 'コピーしました';
+    } catch (err) {
+      console.error(err);
+      btn.textContent = 'コピーできませんでした';
+    }
+    setTimeout(() => { btn.textContent = 'クリップボードにコピー'; }, 1500);
   };
 
   if (new URLSearchParams(location.search).has('debug')) {
