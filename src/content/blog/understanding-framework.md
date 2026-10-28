@@ -115,6 +115,8 @@ After: まず、理解したあとに何ができるようになりたいかを�
 
 読む前に測るのは、読んだ後に測ると、読んだ直後の読みやすさが判定に混ざるからです。読む前の答えがあれば、読んだ後の答えと比べて何が変わったかが分かります。
 
+読む前に問うと、答えられなかった問いでも、後で読んだときに覚える量が増えることも分かっています。事前テスト効果(pretesting effect)と呼ばれる現象です。
+
 状態ファイルには、本人の答えをそのまま書きます。AI の解説は書きません。次に何をするかを決める材料は本人が何を言えたかで、AI が何を説明したかではないからです。
 
 ## 状態から方法を選ぶ
@@ -244,3 +246,4 @@ sequenceDiagram
 ## 出典
 
 - Knoblich, Ohlsson, Haider & Rhenius (1999) Constraint relaxation and chunk decomposition in insight problem solving. Journal of Experimental Psychology: Learning, Memory, and Cognition 25(6).
+- Richland, Kornell & Kao (2009) The pretesting effect: Do unsuccessful retrieval attempts enhance learning? Journal of Experimental Psychology: Applied 15(3).
