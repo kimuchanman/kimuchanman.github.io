@@ -76,5 +76,9 @@ const entries = Astro.props.entries.slice().sort((a, b) => b.date.valueOf() - a.
 			flex-direction: column;
 			gap: 0.2em;
 		}
+		/* 縦並びでは flex-basis が高さになるので、幅固定を外す */
+		.date {
+			flex: none;
+		}
 	}
 </style>
