@@ -7,9 +7,9 @@ updatedDate: '2026-11-16'
 
 Claude Code は応答を待つ間、スピナーの下に 1 行の tips を出します。標準では Claude Code 自体の使い方の tips で、何度か使ううちに見たことのある文ばかりになります。
 
-![スピナーの下に「Tip: GitHub: Slack と Teams で @GitHub を使い、会話からバグ調査、Issue 作成、変更の実装、PR 作成まで行えるようになった(一般提供)」と出ている画面](./claude-code-spinner-tips.webp)
+この tips は、`settings.json` の `spinnerTipsOverride` で自分で用意したファイルに差し替えられます。下の画像は、差し替えた後のスピナーです。GitHub Changelog の項目を要約した tips を出しています。
 
-この tips は、`settings.json` の `spinnerTipsOverride` で自分で用意したファイルに差し替えられます。上の画像は、差し替えた後のスピナーです。GitHub Changelog の項目を要約した tips を出しています。
+![スピナーの下に「Tip: GitHub: Slack と Teams で @GitHub を使い、会話からバグ調査、Issue 作成、変更の実装、PR 作成まで行えるようになった(一般提供)」と出ている画面](./claude-code-spinner-tips.webp)
 
 差し替えた後のファイルは、自分に役立つ情報を流す 1 行の表示欄として使えます。裏で情報を集め、要約して最新に保っておけば、待ち時間に目に入るのは毎回少しずつ違う、自分に関係のある情報になります。自分から探しに行かなかった更新や約束事を、待ち時間にたまたま知る機会もできます。
 
