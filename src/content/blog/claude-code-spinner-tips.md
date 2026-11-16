@@ -82,7 +82,7 @@ function claude() {
 | ツールの更新 | haiku で要約 | キャッシュが 1 日より古い |
 | ショートカットキー | スクリプトだけ | 起動のたびに作る |
 
-リポジトリと材料ファイルのキャッシュは、起動したディレクトリごとに 1 つずつ持ちます。他の 4 つのキャッシュは、どこで起動しても同じものを使います。
+リポジトリのキャッシュはリポジトリごとに、材料ファイルのキャッシュはファイルの一覧を置いたディレクトリごとに 1 つずつ持ちます。他の 4 つのキャッシュは、どこで起動しても同じものを使います。
 
 `current.json` を書くときは、各種類の tips を均等に混ぜて並べています。どれか 1 種類だけが続けて出ないようにするためです。
 
@@ -137,14 +137,14 @@ CLAUDE.md に書いた約束事が待ち時間に何度か目に入るので、�
 docs/glossary.md
 # 設計判断(ADR)
 docs/adr/README.md
-docs/adr/0012-audit-log.md
+docs/adr/0003-example.md
 # 作業の約束事
 CLAUDE.md
 ```
 
 (このパスは例です)
 
-私は、複数のリポジトリを並べて置いた親ディレクトリにこのファイルを置いています。親ディレクトリは git リポジトリではありませんが、ファイルを指定すれば tips を作れます。材料には、用語集・ADR・各リポジトリの CLAUDE.md を選びました。新しく入ったプロジェクトで、業務の言葉と過去の判断を待ち時間に覚えるためです。
+私は、複数のリポジトリを並べて置いた親ディレクトリにこのファイルを置いています。親ディレクトリは git リポジトリではありませんが、ファイルを指定すれば tips を作れます。材料には、用語集・ADR・各リポジトリの CLAUDE.md を選びました。ADR の tips は、新しく入ったリポジトリで過去の判断を知る機会になります。用語の tips は、業務の言葉に慣れるまでの間に向いています。
 
 haiku への指示は、対象と形式をこの用途に合わせています。
 
@@ -197,7 +197,7 @@ fi
 Slack は claude.ai の Slack コネクタ経由で読みます。他の tips では `--setting-sources project` でユーザー設定を読まずに動かしていますが、その状態ではコネクタが使えませんでした。そこで Slack だけはユーザー設定を読む形で動かし、代わりに次の 2 つで生成の呼び出しを絞っています。
 
 - `--settings '{"disableAllHooks": true}'` で、自分の hooks を止める
-- `--allowedTools` で読み取りのツール(`slack_read_channel` と `slack_read_thread`)だけを許し、送信やリアクションなど書き込みのツールは `--disallowedTools` で禁止する
+- `--allowedTools` に読み取りのツール(`slack_read_channel` と `slack_read_thread`)を並べて、確認なしで実行できるようにする。送信やリアクションなど書き込みのツールは `--disallowedTools` に並べて禁止する
 
 ```bash
 printf '%s\n' "$prompt" |
@@ -245,7 +245,7 @@ PR の状態は 1 日の中でも変わるので、キャッシュが 1 時間�
 
 ## 7. 使っているツールの更新
 
-Claude Code の CHANGELOG と同じ作りを、毎日使っている他のツールにも使っています。対象は pnpm、GitHub、ターミナルアプリの Herdr(複数のエージェントをタブやペインに並べて使うアプリ)の 3 つです。
+Claude Code の CHANGELOG と同じ作りを、毎日使っている他のツールにも使っています。対象は pnpm、GitHub、Herdr(ターミナルとコーディングエージェントを並べて使うデスクトップアプリ)の 3 つです。
 
 | ツール | 取得元 | 絞り方 |
 | --- | --- | --- |
@@ -263,7 +263,7 @@ Claude Code の CHANGELOG と同じ作りを、毎日使っている他のツー
 
 次のような tips が出ました。
 
-- pnpm 12.19: pnpm fund を追加。インストール済み依存の funding URL を npm fund と同じ木構造で一覧表示し、--json で出力できる
+- pnpm 12.19: pnpm store add にディレクトリを渡すと、配下の .tgz、.tar.gz、.tar を再帰的に追加する。例: pnpm store add ./tarballs
 - GitHub: 個人アカウントのリポジトリで issue types と issue fields が使えるようになった。既定の issue types は Bug、Task、Feature で、最大 25 個まで作成できる
 - Herdr 0.1.16: settings.json で copy_on_select を false にすると、テキスト選択時の自動コピーを無効にできる
 
